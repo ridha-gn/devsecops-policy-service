@@ -1,0 +1,147 @@
+name: Infrastructure Security Scan
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+    
+    services:
+      policy-service:
+        image: devsecops-policy-service:latest
+        ports:
+          - 8000:8000
+        options: >-
+          --health-cmd "curl -f http://localhost:8000/health || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Wait for policy service
+        run: |
+          echo "Waiting for policy service to be ready..."
+          timeout 30 bash -c 'until curl -f http://localhost:8000/health; do sleep 2; done'
+      
+      - name: Scan Terraform Files
+        id: scan-terraform
+        run: |
+          VIOLATIONS=0
+          
+          for file in $(find . -name "*.tf"); do
+            echo "Scanning $file..."
+            
+            CONTENT=$(cat $file | jq -Rs .)
+            
+            RESPONSE=$(curl -s -X POST http://localhost:8000/analyze \
+              -H "Content-Type: application/json" \
+              -d "{\"code_type\":\"terraform\",\"content\":${CONTENT}}")
+            
+            DECISION=$(echo $RESPONSE | jq -r '.decision')
+            
+            if [ "$DECISION" = "BLOCK" ]; then
+              echo "::error file=$file::Security violations found"
+              echo $RESPONSE | jq '.'
+              VIOLATIONS=$((VIOLATIONS+1))
+            else
+              echo "::notice file=$file::Passed security scan"
+            fi
+          done
+          
+          echo "violations=$VIOLATIONS" >> $GITHUB_OUTPUT
+      
+      - name: Scan Dockerfiles
+        id: scan-docker
+        run: |
+          VIOLATIONS=0
+          
+          for file in $(find . -name "Dockerfile*"); do
+            echo "Scanning $file..."
+            
+            CONTENT=$(cat $file | jq -Rs .)
+            
+            RESPONSE=$(curl -s -X POST http://localhost:8000/analyze \
+              -H "Content-Type: application/json" \
+              -d "{\"code_type\":\"dockerfile\",\"content\":${CONTENT}}")
+            
+            DECISION=$(echo $RESPONSE | jq -r '.decision')
+            
+            if [ "$DECISION" = "BLOCK" ]; then
+              echo "::error file=$file::Security violations found"
+              echo $RESPONSE | jq '.'
+              VIOLATIONS=$((VIOLATIONS+1))
+            else
+              echo "::notice file=$file::Passed security scan"
+            fi
+          done
+          
+          echo "violations=$VIOLATIONS" >> $GITHUB_OUTPUT
+      
+      - name: Scan Kubernetes Files
+        id: scan-k8s
+        run: |
+          VIOLATIONS=0
+          
+          for file in $(find . -name "*.yaml" -o -name "*.yml"); do
+            echo "Scanning $file..."
+            
+            CONTENT=$(cat $file | jq -Rs .)
+            
+            RESPONSE=$(curl -s -X POST http://localhost:8000/analyze \
+              -H "Content-Type: application/json" \
+              -d "{\"code_type\":\"yaml\",\"content\":${CONTENT}}")
+            
+            DECISION=$(echo $RESPONSE | jq -r '.decision')
+            
+            if [ "$DECISION" = "BLOCK" ]; then
+              echo "::error file=$file::Security violations found"
+              echo $RESPONSE | jq '.'
+              VIOLATIONS=$((VIOLATIONS+1))
+            else
+              echo "::notice file=$file::Passed security scan"
+            fi
+          done
+          
+          echo "violations=$VIOLATIONS" >> $GITHUB_OUTPUT
+      
+      - name: Check Results
+        run: |
+          TOTAL_VIOLATIONS=$((
+            ${{ steps.scan-terraform.outputs.violations }} + 
+            ${{ steps.scan-docker.outputs.violations }} + 
+            ${{ steps.scan-k8s.outputs.violations }}
+          ))
+          
+          if [ $TOTAL_VIOLATIONS -gt 0 ]; then
+            echo "::error::Security scan failed with $TOTAL_VIOLATIONS violation(s)"
+            exit 1
+          else
+            echo "::notice::All files passed security scan"
+          fi
+      
+      - name: Get Scan Metrics
+        if: always()
+        run: |
+          echo "Scan Metrics:"
+          curl -s http://localhost:8000/metrics | jq '.'
+
+  deploy:
+    needs: security-scan
+    if: github.ref == 'refs/heads/main' && success()
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Deploy Infrastructure
+        run: |
+          echo "Deploying infrastructure..."
+          # Add your deployment commands here

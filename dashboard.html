@@ -1,0 +1,1829 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DevSecOps Policy Engine</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:       #080c10;
+    --surface:  #0d1117;
+    --border:   #1c2433;
+    --border2:  #243040;
+    --text:     #c9d1d9;
+    --muted:    #4a5568;
+    --accent:   #00e5ff;
+    --green:    #00ff88;
+    --red:      #ff4060;
+    --orange:   #ff8c00;
+    --yellow:   #ffd700;
+    --critical: #ff2d55;
+    --high:     #ff6b35;
+    --medium:   #ffd166;
+    --low:      #06d6a0;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Scanline effect */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.07) 2px,
+      rgba(0,0,0,0.07) 4px
+    );
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .layout {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    grid-template-rows: 56px 1fr;
+    min-height: 100vh;
+  }
+
+  /* ── TOPBAR ── */
+  .topbar {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(8,12,16,0.95);
+    backdrop-filter: blur(10px);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logo-icon {
+    width: 28px;
+    height: 28px;
+    position: relative;
+  }
+
+  .logo-icon svg { width: 100%; height: 100%; }
+
+  .logo-text {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 15px;
+    letter-spacing: 0.05em;
+    color: #fff;
+  }
+
+  .logo-text span { color: var(--accent); }
+
+  .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .status-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 6px var(--green);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  .status-dot.offline { background: var(--red); box-shadow: 0 0 6px var(--red); animation: none; }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .time-display {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    border-right: 1px solid var(--border);
+    padding: 20px 0;
+    background: rgba(13,17,23,0.8);
+  }
+
+  .nav-section {
+    margin-bottom: 24px;
+  }
+
+  .nav-label {
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    color: var(--muted);
+    padding: 0 20px;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 20px;
+    cursor: pointer;
+    color: var(--muted);
+    transition: all 0.15s;
+    border-left: 2px solid transparent;
+    font-size: 12px;
+  }
+
+  .nav-item:hover { color: var(--text); background: rgba(255,255,255,0.03); }
+  .nav-item.active { color: var(--accent); border-left-color: var(--accent); background: rgba(0,229,255,0.05); }
+  .nav-item svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+  .nav-badge {
+    margin-left: auto;
+    background: rgba(0,229,255,0.15);
+    color: var(--accent);
+    font-size: 9px;
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+
+  /* ── MAIN ── */
+  .main {
+    padding: 24px;
+    overflow-y: auto;
+  }
+
+  /* ── VIEWS ── */
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* ── PAGE HEADER ── */
+  .page-header {
+    margin-bottom: 24px;
+  }
+
+  .page-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 4px;
+  }
+
+  .page-sub {
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  /* ── STAT CARDS ── */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+
+  .stat-card.accent::before { background: var(--accent); }
+  .stat-card.green::before  { background: var(--green); }
+  .stat-card.red::before    { background: var(--red); }
+  .stat-card.orange::before { background: var(--orange); }
+
+  .stat-card:hover { border-color: var(--border2); }
+
+  .stat-label {
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .stat-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 32px;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+
+  .stat-card.accent .stat-value { color: var(--accent); }
+  .stat-card.green  .stat-value { color: var(--green); }
+  .stat-card.red    .stat-value { color: var(--red); }
+  .stat-card.orange .stat-value { color: var(--orange); }
+
+  .stat-sub {
+    font-size: 10px;
+    color: var(--muted);
+  }
+
+  /* ── GRID 2COL ── */
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  /* ── PANEL ── */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(255,255,255,0.02);
+  }
+
+  .panel-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text);
+  }
+
+  .panel-body { padding: 16px; }
+
+  /* ── VIOLATION BARS ── */
+  .viol-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .viol-name {
+    width: 200px;
+    flex-shrink: 0;
+    font-size: 11px;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .viol-bar-wrap {
+    flex: 1;
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .viol-bar {
+    height: 100%;
+    border-radius: 3px;
+    background: var(--accent);
+    transition: width 0.8s ease;
+  }
+
+  .viol-count {
+    width: 28px;
+    text-align: right;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  /* ── BLOCK RATE RING ── */
+  .ring-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    gap: 32px;
+  }
+
+  .ring-svg { position: relative; }
+  .ring-svg svg { transform: rotate(-90deg); }
+
+  .ring-label {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .ring-pct {
+    font-family: 'Syne', sans-serif;
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--red);
+    line-height: 1;
+  }
+
+  .ring-sub {
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .ring-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+  }
+
+  .legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .legend-val {
+    margin-left: auto;
+    color: var(--accent);
+    font-weight: 600;
+    padding-left: 16px;
+  }
+
+  /* ── SCAN FORM ── */
+  .scan-grid {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 16px;
+  }
+
+  .form-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 12px;
+    align-items: center;
+  }
+
+  .form-label {
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .form-group { margin-bottom: 14px; }
+
+  select, input[type="text"] {
+    background: var(--bg);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    padding: 8px 12px;
+    border-radius: 4px;
+    outline: none;
+    transition: border-color 0.15s;
+    width: 100%;
+  }
+
+  select:focus, input:focus { border-color: var(--accent); }
+
+  select option { background: var(--surface); }
+
+  textarea {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    padding: 12px;
+    border-radius: 4px;
+    outline: none;
+    resize: vertical;
+    min-height: 300px;
+    transition: border-color 0.15s;
+    line-height: 1.6;
+  }
+
+  textarea:focus { border-color: var(--accent); }
+  textarea::placeholder { color: var(--muted); }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.05em;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #000;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .btn-primary:hover { background: #33ecff; transform: translateY(-1px); }
+  .btn-primary:active { transform: translateY(0); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  .btn-ghost {
+    background: transparent;
+    border: 1px solid var(--border2);
+    color: var(--muted);
+  }
+
+  .btn-ghost:hover { border-color: var(--text); color: var(--text); }
+
+  /* ── THRESHOLD PILLS ── */
+  .threshold-group {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .threshold-pill {
+    padding: 5px 12px;
+    border-radius: 4px;
+    border: 1px solid var(--border2);
+    background: transparent;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .threshold-pill:hover { border-color: var(--text); color: var(--text); }
+  .threshold-pill.active { background: rgba(0,229,255,0.1); border-color: var(--accent); color: var(--accent); }
+  .threshold-pill.critical.active { background: rgba(255,45,85,0.1); border-color: var(--critical); color: var(--critical); }
+  .threshold-pill.high.active    { background: rgba(255,107,53,0.1); border-color: var(--high); color: var(--high); }
+  .threshold-pill.medium.active  { background: rgba(255,209,102,0.1); border-color: var(--medium); color: var(--medium); }
+  .threshold-pill.low.active     { background: rgba(6,214,160,0.1); border-color: var(--low); color: var(--low); }
+
+  /* ── RESULT PANEL ── */
+  .result-panel {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    min-height: 400px;
+  }
+
+  .result-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .result-title {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .decision-badge {
+    padding: 4px 12px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+  }
+
+  .decision-badge.block { background: rgba(255,64,96,0.15); color: var(--red); border: 1px solid rgba(255,64,96,0.3); }
+  .decision-badge.allow { background: rgba(0,255,136,0.1); color: var(--green); border: 1px solid rgba(0,255,136,0.3); }
+  .decision-badge.pending { background: rgba(74,85,104,0.3); color: var(--muted); border: 1px solid var(--border); }
+
+  .result-body {
+    padding: 16px;
+    max-height: 500px;
+    overflow-y: auto;
+  }
+
+  .result-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 200px;
+    color: var(--muted);
+    gap: 10px;
+  }
+
+  .result-empty svg { opacity: 0.3; }
+
+  .violation-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 12px;
+    margin-bottom: 8px;
+    border-left: 3px solid var(--border2);
+    animation: slideIn 0.2s ease forwards;
+    opacity: 0;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .violation-card.CRITICAL { border-left-color: var(--critical); }
+  .violation-card.HIGH     { border-left-color: var(--high); }
+  .violation-card.MEDIUM   { border-left-color: var(--medium); }
+  .violation-card.LOW      { border-left-color: var(--low); }
+
+  .v-top {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+
+  .v-rule {
+    font-size: 12px;
+    font-weight: 600;
+    color: #fff;
+  }
+
+  .v-sev {
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 3px;
+    letter-spacing: 0.08em;
+  }
+
+  .v-sev.CRITICAL { background: rgba(255,45,85,0.2); color: var(--critical); }
+  .v-sev.HIGH     { background: rgba(255,107,53,0.2); color: var(--high); }
+  .v-sev.MEDIUM   { background: rgba(255,209,102,0.2); color: var(--medium); }
+  .v-sev.LOW      { background: rgba(6,214,160,0.2); color: var(--low); }
+
+  .v-line {
+    font-size: 10px;
+    color: var(--muted);
+    margin-left: auto;
+  }
+
+  .v-msg {
+    font-size: 11px;
+    color: var(--text);
+    margin-bottom: 4px;
+    line-height: 1.5;
+  }
+
+  .v-rec {
+    font-size: 10px;
+    color: var(--muted);
+    padding: 6px 8px;
+    background: rgba(255,255,255,0.02);
+    border-radius: 3px;
+    border-left: 2px solid var(--border2);
+    line-height: 1.5;
+  }
+
+  .v-rec::before {
+    content: 'FIX: ';
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  /* ── SCAN TIME ── */
+  .scan-meta {
+    display: flex;
+    gap: 16px;
+    padding: 10px 16px;
+    border-top: 1px solid var(--border);
+    font-size: 10px;
+    color: var(--muted);
+  }
+
+  .scan-meta span { color: var(--accent); }
+
+  /* ── HISTORY TABLE ── */
+  .history-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .history-table th {
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-align: left;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .history-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(28,36,51,0.5);
+    font-size: 11px;
+    color: var(--text);
+  }
+
+  .history-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .badge-block { color: var(--red); font-weight: 600; }
+  .badge-allow { color: var(--green); font-weight: 600; }
+
+  /* ── POLICIES TABLE ── */
+  .policies-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  .policy-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 10px 12px;
+    transition: border-color 0.15s;
+  }
+
+  .policy-card:hover { border-color: var(--border2); }
+
+  .policy-id {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--accent);
+    margin-bottom: 3px;
+    letter-spacing: 0.05em;
+  }
+
+  .policy-desc {
+    font-size: 10px;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+
+  .policy-sev {
+    display: inline-block;
+    font-size: 9px;
+    padding: 1px 5px;
+    border-radius: 2px;
+    margin-top: 5px;
+  }
+
+  /* ── LOADING ── */
+  .loading {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(0,229,255,0.2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  /* ── QUICK EXAMPLES ── */
+  .examples-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+
+  .example-btn {
+    padding: 4px 10px;
+    background: transparent;
+    border: 1px solid var(--border2);
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .example-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ── ALERT ── */
+  .alert {
+    padding: 10px 14px;
+    border-radius: 4px;
+    font-size: 11px;
+    margin-bottom: 12px;
+    display: none;
+  }
+
+  .alert.error { background: rgba(255,64,96,0.1); border: 1px solid rgba(255,64,96,0.3); color: var(--red); display: block; }
+  .alert.success { background: rgba(0,255,136,0.08); border: 1px solid rgba(0,255,136,0.2); color: var(--green); display: block; }
+
+  /* ── ALLOW RESULT ── */
+  .allow-result {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    gap: 12px;
+    text-align: center;
+  }
+
+  .allow-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: rgba(0,255,136,0.1);
+    border: 2px solid rgba(0,255,136,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .allow-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--green);
+  }
+
+  .allow-sub { font-size: 11px; color: var(--muted); }
+
+  /* ── AUTO-FIX STYLES ── */
+  .btn-fix {
+    background: transparent;
+    border: 1px solid var(--green);
+    color: var(--green);
+    width: 100%;
+    justify-content: center;
+    margin-top: 8px;
+  }
+  .btn-fix:hover { background: rgba(0,255,136,0.1); transform: translateY(-1px); }
+  .btn-fix:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  .btn-pdf {
+    background: transparent;
+    border: 1px solid var(--orange);
+    color: var(--orange);
+    padding: 6px 14px;
+    font-size: 11px;
+  }
+  .btn-pdf:hover { background: rgba(255,140,0,0.1); }
+
+  .fix-result { margin-top: 12px; }
+  .fix-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .fix-header h3 { font-family: 'Syne', sans-serif; font-size: 14px; color: var(--green); }
+  .fix-badge {
+    background: rgba(0,255,136,0.1); border: 1px solid rgba(0,255,136,0.3);
+    color: var(--green); padding: 3px 10px; border-radius: 3px;
+    font-size: 11px; font-weight: 600;
+  }
+  .fix-diff {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 4px; padding: 12px; font-size: 11px;
+    line-height: 1.6; overflow-x: auto; white-space: pre;
+    max-height: 400px; overflow-y: auto;
+  }
+  .fix-diff .line-add { color: var(--green); }
+  .fix-diff .line-del { color: var(--red); }
+  .fix-diff .line-info { color: var(--accent); }
+  .fix-item {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 4px; padding: 10px 12px; margin-bottom: 6px;
+    border-left: 3px solid var(--green);
+  }
+  .fix-item .fix-rule { font-size: 11px; font-weight: 600; color: var(--green); }
+  .fix-item .fix-desc { font-size: 11px; color: var(--text); margin-top: 3px; }
+  .fix-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+  .fix-tab {
+    padding: 5px 12px; border-radius: 4px; border: 1px solid var(--border2);
+    background: transparent; color: var(--muted); font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; cursor: pointer; transition: all 0.15s;
+  }
+  .fix-tab:hover { border-color: var(--text); color: var(--text); }
+  .fix-tab.active { background: rgba(0,255,136,0.1); border-color: var(--green); color: var(--green); }
+</style>
+</head>
+<body>
+
+<div class="layout">
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div class="logo">
+      <div class="logo-icon">
+        <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <polygon points="14,2 26,8 26,20 14,26 2,20 2,8" fill="none" stroke="#00e5ff" stroke-width="1.5"/>
+          <polygon points="14,7 21,11 21,17 14,21 7,17 7,11" fill="rgba(0,229,255,0.1)" stroke="#00e5ff" stroke-width="1"/>
+          <circle cx="14" cy="14" r="3" fill="#00e5ff"/>
+        </svg>
+      </div>
+      <div class="logo-text">DEV<span>SEC</span>OPS · POLICY ENGINE</div>
+    </div>
+    <div class="topbar-right">
+      <div class="status-pill">
+        <div class="status-dot" id="statusDot"></div>
+        <span id="statusText">CONNECTING...</span>
+      </div>
+      <div class="time-display" id="clockDisplay">--:--:--</div>
+    </div>
+  </header>
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="nav-section">
+      <div class="nav-label">Monitor</div>
+      <div class="nav-item active" onclick="showView('dashboard', this)">
+        <svg viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>
+        Dashboard
+      </div>
+      <div class="nav-item" onclick="showView('scan', this)">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="7" r="5"/><line x1="10.5" y1="10.5" x2="14" y2="14"/></svg>
+        Scan Code
+      </div>
+      <div class="nav-item" onclick="showView('history', this)">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><polyline points="8,4 8,8 11,10"/></svg>
+        History
+        <span class="nav-badge" id="historyBadge">0</span>
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Config</div>
+      <div class="nav-item" onclick="showView('policies', this)">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="1"/><line x1="5" y1="6" x2="11" y2="6"/><line x1="5" y1="9" x2="9" y2="9"/></svg>
+        Policies
+        <span class="nav-badge">100</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- ── DASHBOARD VIEW ── -->
+    <div class="view active" id="view-dashboard">
+      <div class="page-header">
+        <div class="page-title">Overview</div>
+        <div class="page-sub">Real-time security scanning metrics</div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card accent">
+          <div class="stat-label">Total Scans</div>
+          <div class="stat-value" id="statTotal">—</div>
+          <div class="stat-sub">All time</div>
+        </div>
+        <div class="stat-card red">
+          <div class="stat-label">Blocked</div>
+          <div class="stat-value" id="statBlocks">—</div>
+          <div class="stat-sub">Deployments stopped</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-label">Allowed</div>
+          <div class="stat-value" id="statAllows">—</div>
+          <div class="stat-sub">Clean deployments</div>
+        </div>
+        <div class="stat-card orange">
+          <div class="stat-label">Block Rate</div>
+          <div class="stat-value" id="statRate">—</div>
+          <div class="stat-sub">Percent blocked</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">Top Violations</div>
+          </div>
+          <div class="panel-body" id="topViolations">
+            <div style="color:var(--muted);font-size:11px;">Loading...</div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">Block / Allow Ratio</div>
+          </div>
+          <div class="ring-wrap">
+            <div class="ring-svg" style="position:relative;width:120px;height:120px;">
+              <svg width="120" height="120" viewBox="0 0 120 120">
+                <circle cx="60" cy="60" r="50" fill="none" stroke="var(--border)" stroke-width="10"/>
+                <circle cx="60" cy="60" r="50" fill="none" stroke="var(--red)" stroke-width="10"
+                  stroke-dasharray="314" stroke-dashoffset="314" id="ringCircle"
+                  stroke-linecap="round" style="transition:stroke-dashoffset 1s ease"/>
+              </svg>
+              <div class="ring-label">
+                <div class="ring-pct" id="ringPct">0%</div>
+                <div class="ring-sub">BLOCKED</div>
+              </div>
+            </div>
+            <div class="ring-legend">
+              <div class="legend-item">
+                <div class="legend-dot" style="background:var(--red)"></div>
+                Blocked
+                <div class="legend-val" id="legendBlocks">0</div>
+              </div>
+              <div class="legend-item">
+                <div class="legend-dot" style="background:var(--green)"></div>
+                Allowed
+                <div class="legend-val" id="legendAllows">0</div>
+              </div>
+              <div class="legend-item">
+                <div class="legend-dot" style="background:var(--accent)"></div>
+                Total
+                <div class="legend-val" id="legendTotal">0</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Recent Scans</div>
+          <button class="btn btn-ghost" style="padding:4px 10px;font-size:10px;" onclick="showView('scan', document.querySelector('[onclick*=scan]'))">+ New Scan</button>
+        </div>
+        <div class="panel-body" style="padding:0">
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>File</th>
+                <th>Type</th>
+                <th>Violations</th>
+                <th>Decision</th>
+                <th>Duration</th>
+              </tr>
+            </thead>
+            <tbody id="recentScansBody">
+              <tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No scans yet</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SCAN VIEW ── -->
+    <div class="view" id="view-scan">
+      <div class="page-header">
+        <div class="page-title">Scan Code</div>
+        <div class="page-sub">Analyze Terraform, Dockerfile, or Kubernetes YAML against 100 security policies</div>
+      </div>
+
+      <div class="scan-grid">
+        <div>
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title">Code Input</div>
+              <div style="display:flex;gap:8px;align-items:center">
+                <select id="codeType" style="width:140px;padding:4px 8px;">
+                  <option value="terraform">Terraform</option>
+                  <option value="dockerfile">Dockerfile</option>
+                  <option value="yaml">Kubernetes YAML</option>
+                </select>
+              </div>
+            </div>
+            <div class="panel-body">
+              <div class="form-group">
+                <div class="form-label">Quick Examples</div>
+                <div class="examples-row">
+                  <button class="example-btn" onclick="loadExample('bad-tf')">Bad Terraform</button>
+                  <button class="example-btn" onclick="loadExample('good-tf')">Good Terraform</button>
+                  <button class="example-btn" onclick="loadExample('bad-docker')">Bad Dockerfile</button>
+                  <button class="example-btn" onclick="loadExample('good-docker')">Good Dockerfile</button>
+                  <button class="example-btn" onclick="loadExample('bad-k8s')">Bad K8s</button>
+                </div>
+              </div>
+              <div class="form-group">
+                <div class="form-label">Paste your code</div>
+                <textarea id="codeInput" placeholder="Paste your Terraform, Dockerfile, or Kubernetes YAML here..."></textarea>
+              </div>
+              <div class="form-group">
+                <div class="form-label">Block threshold — block deployment if violations at or above:</div>
+                <div class="threshold-group">
+                  <button class="threshold-pill low active" onclick="setThreshold('LOW', this)">LOW</button>
+                  <button class="threshold-pill medium" onclick="setThreshold('MEDIUM', this)">MEDIUM</button>
+                  <button class="threshold-pill high" onclick="setThreshold('HIGH', this)">HIGH</button>
+                  <button class="threshold-pill critical" onclick="setThreshold('CRITICAL', this)">CRITICAL only</button>
+                </div>
+              </div>
+              <button class="btn btn-primary" onclick="runScan()" id="scanBtn">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7" cy="7" r="5"/><line x1="10.5" y1="10.5" x2="14" y2="14"/></svg>
+                RUN SECURITY SCAN
+              </button>
+              <button class="btn btn-fix" onclick="runAutoFix()" id="fixBtn">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 1L15 5L5 15H1V11L11 1Z"/></svg>
+                AUTO-FIX CODE
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="result-panel" id="resultPanel">
+            <div class="result-header">
+              <div class="result-title">Scan Result</div>
+              <div style="display:flex;gap:8px;align-items:center">
+                <button class="btn btn-pdf" id="pdfBtn" onclick="downloadPDF()" style="display:none">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 14h8M8 2v9M5 8l3 3 3-3"/></svg>
+                  PDF
+                </button>
+                <div class="decision-badge pending" id="decisionBadge">WAITING</div>
+              </div>
+            </div>
+            <div class="result-body" id="resultBody">
+              <div class="result-empty">
+                <svg width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <circle cx="18" cy="18" r="12"/><line x1="26" y1="26" x2="36" y2="36"/>
+                </svg>
+                <div style="font-size:11px;">Run a scan to see results</div>
+              </div>
+            </div>
+            <div class="scan-meta" id="scanMeta" style="display:none">
+              <div>Violations: <span id="metaViolations">0</span></div>
+              <div>Duration: <span id="metaDuration">0ms</span></div>
+              <div>Threshold: <span id="metaThreshold">LOW</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── HISTORY VIEW ── -->
+    <div class="view" id="view-history">
+      <div class="page-header">
+        <div class="page-title">Scan History</div>
+        <div class="page-sub">All scans performed in this session</div>
+      </div>
+      <div class="panel">
+        <div class="panel-body" style="padding:0">
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Time</th>
+                <th>Filename</th>
+                <th>Type</th>
+                <th>Violations</th>
+                <th>Threshold</th>
+                <th>Decision</th>
+                <th>Duration</th>
+              </tr>
+            </thead>
+            <tbody id="historyBody">
+              <tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px;">No scan history yet</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── POLICIES VIEW ── -->
+    <div class="view" id="view-policies">
+      <div class="page-header">
+        <div class="page-title">Security Policies</div>
+        <div class="page-sub">100 policies across Terraform, Dockerfile, and Kubernetes</div>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+        <button class="threshold-pill active" onclick="filterPolicies('ALL', this)">ALL (100)</button>
+        <button class="threshold-pill critical" onclick="filterPolicies('CRITICAL', this)">CRITICAL</button>
+        <button class="threshold-pill high" onclick="filterPolicies('HIGH', this)">HIGH</button>
+        <button class="threshold-pill medium" onclick="filterPolicies('MEDIUM', this)">MEDIUM</button>
+        <button class="threshold-pill low" onclick="filterPolicies('LOW', this)">LOW</button>
+        <button class="threshold-pill" onclick="filterPolicies('terraform', this)">Terraform</button>
+        <button class="threshold-pill" onclick="filterPolicies('docker', this)">Docker</button>
+        <button class="threshold-pill" onclick="filterPolicies('k8s', this)">Kubernetes</button>
+      </div>
+
+      <div class="policies-grid" id="policiesGrid"></div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+// ── STATE ──
+let scanHistory = [];
+let currentThreshold = 'LOW';
+const API = '';  // same origin
+
+// ── POLICIES DATA ──
+const POLICIES = [
+  {id:'PUBLIC_S3_BUCKET',sev:'HIGH',desc:'S3 buckets should not be publicly accessible',type:'terraform'},
+  {id:'HARDCODED_SECRET',sev:'CRITICAL',desc:'Code should not contain hardcoded secrets',type:'terraform'},
+  {id:'UNENCRYPTED_STORAGE',sev:'HIGH',desc:'Storage resources should be encrypted',type:'terraform'},
+  {id:'DOCKER_ROOT_USER',sev:'MEDIUM',desc:'Docker containers should not run as root',type:'docker'},
+  {id:'MISSING_REQUIRED_TAGS',sev:'LOW',desc:'Resources should have required tags',type:'terraform'},
+  {id:'INSECURE_SECURITY_GROUP',sev:'HIGH',desc:'Security groups should not allow unrestricted access',type:'terraform'},
+  {id:'MISSING_LOGGING',sev:'MEDIUM',desc:'Resources should have logging enabled',type:'terraform'},
+  {id:'PUBLIC_DATABASE',sev:'CRITICAL',desc:'Databases should not be publicly accessible',type:'terraform'},
+  {id:'EXPENSIVE_INSTANCE_TYPE',sev:'MEDIUM',desc:'Expensive instance types should be reviewed',type:'terraform'},
+  {id:'PRIVILEGED_CONTAINER',sev:'HIGH',desc:'Containers should not run in privileged mode',type:'k8s'},
+  {id:'HOST_NETWORK_ENABLED',sev:'MEDIUM',desc:'Pods should not use host network',type:'k8s'},
+  {id:'MISSING_RESOURCE_LIMITS',sev:'LOW',desc:'Containers should define resource limits',type:'k8s'},
+  {id:'S3_VERSIONING_DISABLED',sev:'MEDIUM',desc:'S3 buckets should have versioning enabled',type:'terraform'},
+  {id:'S3_MFA_DELETE_DISABLED',sev:'HIGH',desc:'S3 buckets should require MFA for deletion',type:'terraform'},
+  {id:'S3_LIFECYCLE_MISSING',sev:'LOW',desc:'S3 buckets should have lifecycle policies',type:'terraform'},
+  {id:'S3_BLOCK_PUBLIC_ACL_MISSING',sev:'HIGH',desc:'S3 buckets should block all public ACLs',type:'terraform'},
+  {id:'S3_REPLICATION_MISSING',sev:'LOW',desc:'Critical S3 buckets should have cross-region replication',type:'terraform'},
+  {id:'EC2_IMDSV1_ENABLED',sev:'HIGH',desc:'EC2 instances should require IMDSv2',type:'terraform'},
+  {id:'EC2_PUBLIC_IP_ASSIGNED',sev:'MEDIUM',desc:'EC2 instances should not have public IP auto-assigned',type:'terraform'},
+  {id:'EC2_NO_KEY_PAIR',sev:'MEDIUM',desc:'EC2 instances should not use key pairs for SSH',type:'terraform'},
+  {id:'EC2_EBS_UNENCRYPTED',sev:'HIGH',desc:'EBS volumes should be encrypted',type:'terraform'},
+  {id:'EC2_DETAILED_MONITORING_DISABLED',sev:'LOW',desc:'EC2 instances should have detailed monitoring',type:'terraform'},
+  {id:'EC2_TERMINATION_PROTECTION_DISABLED',sev:'MEDIUM',desc:'Production EC2 instances need termination protection',type:'terraform'},
+  {id:'EC2_USERDATA_SECRETS',sev:'CRITICAL',desc:'EC2 user_data should not contain hardcoded secrets',type:'terraform'},
+  {id:'RDS_MULTI_AZ_DISABLED',sev:'MEDIUM',desc:'Production RDS instances should have Multi-AZ enabled',type:'terraform'},
+  {id:'RDS_BACKUP_RETENTION_LOW',sev:'MEDIUM',desc:'RDS instances should have adequate backup retention',type:'terraform'},
+  {id:'RDS_DELETION_PROTECTION_DISABLED',sev:'HIGH',desc:'RDS instances should have deletion protection',type:'terraform'},
+  {id:'RDS_AUTO_MINOR_UPGRADE_DISABLED',sev:'LOW',desc:'RDS should auto-apply minor version upgrades',type:'terraform'},
+  {id:'RDS_ENHANCED_MONITORING_DISABLED',sev:'LOW',desc:'RDS instances should have enhanced monitoring',type:'terraform'},
+  {id:'RDS_PERFORMANCE_INSIGHTS_DISABLED',sev:'LOW',desc:'RDS instances should have Performance Insights',type:'terraform'},
+  {id:'RDS_DEFAULT_PORT',sev:'LOW',desc:'RDS instances should not use default ports',type:'terraform'},
+  {id:'IAM_ADMIN_POLICY_ATTACHED',sev:'CRITICAL',desc:'IAM roles should not have AdministratorAccess',type:'terraform'},
+  {id:'IAM_INLINE_WILDCARD_POLICY',sev:'CRITICAL',desc:'IAM inline policies should not use wildcard actions',type:'terraform'},
+  {id:'IAM_MFA_NOT_REQUIRED',sev:'HIGH',desc:'IAM users with console access should require MFA',type:'terraform'},
+  {id:'IAM_ACCESS_KEY_NO_ROTATION',sev:'MEDIUM',desc:'IAM access keys should have rotation policy',type:'terraform'},
+  {id:'IAM_ROLE_WILDCARD_TRUST',sev:'CRITICAL',desc:'IAM roles should not trust all principals',type:'terraform'},
+  {id:'IAM_WEAK_PASSWORD_POLICY',sev:'MEDIUM',desc:'IAM password policy should enforce strong passwords',type:'terraform'},
+  {id:'IAM_USER_NO_GROUP',sev:'LOW',desc:'IAM users should be assigned to groups',type:'terraform'},
+  {id:'VPC_FLOW_LOGS_DISABLED',sev:'MEDIUM',desc:'VPCs should have flow logs enabled',type:'terraform'},
+  {id:'SECURITY_GROUP_SSH_OPEN',sev:'HIGH',desc:'Security groups should not allow SSH from internet',type:'terraform'},
+  {id:'SECURITY_GROUP_RDP_OPEN',sev:'HIGH',desc:'Security groups should not allow RDP from internet',type:'terraform'},
+  {id:'SECURITY_GROUP_UNRESTRICTED_EGRESS',sev:'MEDIUM',desc:'Security groups should restrict outbound traffic',type:'terraform'},
+  {id:'SUBNET_PUBLIC_IP_ON_LAUNCH',sev:'MEDIUM',desc:'Subnets should not auto-assign public IPs',type:'terraform'},
+  {id:'NACL_ALLOWS_ALL_TRAFFIC',sev:'MEDIUM',desc:'Network ACLs should not allow all traffic',type:'terraform'},
+  {id:'DOCKER_LATEST_TAG',sev:'MEDIUM',desc:'Docker images should use specific version tags',type:'docker'},
+  {id:'DOCKER_ADD_INSTRUCTION',sev:'LOW',desc:'Dockerfile should use COPY instead of ADD',type:'docker'},
+  {id:'DOCKER_NO_HEALTHCHECK',sev:'LOW',desc:'Dockerfiles should define a HEALTHCHECK',type:'docker'},
+  {id:'DOCKER_SECRET_IN_ENV',sev:'CRITICAL',desc:'Dockerfiles should not expose secrets in ENV',type:'docker'},
+  {id:'DOCKER_PRIVILEGED_PORT_EXPOSED',sev:'MEDIUM',desc:'Dockerfiles should not expose privileged ports',type:'docker'},
+  {id:'DOCKER_NO_WORKDIR',sev:'LOW',desc:'Dockerfiles should define a WORKDIR',type:'docker'},
+  {id:'DOCKER_SECRET_IN_ARG',sev:'HIGH',desc:'Dockerfile ARG should not be used for secrets',type:'docker'},
+  {id:'DOCKER_NO_MULTI_STAGE',sev:'LOW',desc:'Production Dockerfiles should use multi-stage builds',type:'docker'},
+  {id:'K8S_NO_READONLY_ROOT_FILESYSTEM',sev:'MEDIUM',desc:'Containers should use read-only root filesystem',type:'k8s'},
+  {id:'K8S_ALLOW_PRIVILEGE_ESCALATION',sev:'HIGH',desc:'Containers should not allow privilege escalation',type:'k8s'},
+  {id:'K8S_RUN_AS_ROOT',sev:'HIGH',desc:'Containers should not run as root user',type:'k8s'},
+  {id:'K8S_HOST_PID_ENABLED',sev:'HIGH',desc:'Pods should not share the host PID namespace',type:'k8s'},
+  {id:'K8S_HOST_IPC_ENABLED',sev:'HIGH',desc:'Pods should not share the host IPC namespace',type:'k8s'},
+  {id:'K8S_IMAGE_PULL_POLICY_NOT_ALWAYS',sev:'LOW',desc:'Use imagePullPolicy Always for latest tags',type:'k8s'},
+  {id:'K8S_NO_LIVENESS_PROBE',sev:'LOW',desc:'Containers should define liveness probes',type:'k8s'},
+  {id:'K8S_NO_READINESS_PROBE',sev:'LOW',desc:'Containers should define readiness probes',type:'k8s'},
+  {id:'K8S_DEFAULT_NAMESPACE',sev:'LOW',desc:'Resources should not deploy to default namespace',type:'k8s'},
+  {id:'K8S_AUTOMOUNT_SERVICE_ACCOUNT',sev:'MEDIUM',desc:'Pods should not automount service account tokens',type:'k8s'},
+  {id:'K8S_DANGEROUS_CAPABILITIES',sev:'HIGH',desc:'Containers should not add dangerous capabilities',type:'k8s'},
+  {id:'K8S_NO_RESOURCE_REQUESTS',sev:'LOW',desc:'Containers should define resource requests',type:'k8s'},
+  {id:'CLOUDTRAIL_DISABLED',sev:'CRITICAL',desc:'AWS CloudTrail should be enabled',type:'terraform'},
+  {id:'CLOUDTRAIL_LOG_VALIDATION_DISABLED',sev:'MEDIUM',desc:'CloudTrail should have log file validation',type:'terraform'},
+  {id:'CLOUDTRAIL_NOT_MULTI_REGION',sev:'MEDIUM',desc:'CloudTrail should be enabled in all regions',type:'terraform'},
+  {id:'CLOUDWATCH_NO_ALARMS',sev:'LOW',desc:'Critical infrastructure should have CloudWatch alarms',type:'terraform'},
+  {id:'GUARDDUTY_DISABLED',sev:'HIGH',desc:'AWS GuardDuty should be enabled',type:'terraform'},
+  {id:'SECURITY_HUB_DISABLED',sev:'MEDIUM',desc:'AWS Security Hub should be enabled',type:'terraform'},
+  {id:'AWS_CONFIG_DISABLED',sev:'MEDIUM',desc:'AWS Config should be enabled',type:'terraform'},
+  {id:'KMS_KEY_ROTATION_DISABLED',sev:'MEDIUM',desc:'KMS keys should have automatic rotation enabled',type:'terraform'},
+  {id:'ALB_HTTP_LISTENER',sev:'HIGH',desc:'Load balancers should only accept HTTPS',type:'terraform'},
+  {id:'ALB_ACCESS_LOGS_DISABLED',sev:'MEDIUM',desc:'Load balancers should have access logs enabled',type:'terraform'},
+  {id:'WAF_NOT_ASSOCIATED',sev:'MEDIUM',desc:'Public load balancers should have a WAF',type:'terraform'},
+  {id:'LB_DELETION_PROTECTION_DISABLED',sev:'MEDIUM',desc:'Load balancers should have deletion protection',type:'terraform'},
+  {id:'ALB_WEAK_TLS_POLICY',sev:'HIGH',desc:'Load balancers should use strong TLS policies',type:'terraform'},
+  {id:'ROUTE53_DNSSEC_DISABLED',sev:'MEDIUM',desc:'Route53 hosted zones should have DNSSEC',type:'terraform'},
+  {id:'ELB_CROSS_ZONE_DISABLED',sev:'LOW',desc:'Load balancers should have cross-zone balancing',type:'terraform'},
+  {id:'TERRAFORM_NO_REMOTE_BACKEND',sev:'MEDIUM',desc:'Terraform state should be in a remote backend',type:'terraform'},
+  {id:'TERRAFORM_PROVIDER_NOT_PINNED',sev:'LOW',desc:'Terraform provider versions should be pinned',type:'terraform'},
+  {id:'TERRAFORM_OUTPUT_NOT_SENSITIVE',sev:'MEDIUM',desc:'Terraform outputs with secrets should be sensitive',type:'terraform'},
+  {id:'TERRAFORM_VARIABLE_DEFAULT_SECRET',sev:'HIGH',desc:'Terraform secret variables should not have defaults',type:'terraform'},
+  {id:'TERRAFORM_VARIABLE_NOT_SENSITIVE',sev:'MEDIUM',desc:'Terraform secret variables should be marked sensitive',type:'terraform'},
+  {id:'EKS_PUBLIC_ENDPOINT',sev:'HIGH',desc:'EKS cluster API endpoint should not be public',type:'terraform'},
+  {id:'EKS_LOGGING_DISABLED',sev:'MEDIUM',desc:'EKS clusters should have control plane logging',type:'terraform'},
+  {id:'LAMBDA_PUBLIC_ACCESS',sev:'HIGH',desc:'Lambda functions should not be publicly accessible',type:'terraform'},
+  {id:'LAMBDA_ENV_SECRETS',sev:'CRITICAL',desc:'Lambda env variables should not contain secrets',type:'terraform'},
+  {id:'LAMBDA_NO_RESERVED_CONCURRENCY',sev:'LOW',desc:'Lambda functions should have reserved concurrency',type:'terraform'},
+  {id:'ECS_TASK_PRIVILEGED',sev:'HIGH',desc:'ECS task containers should not run privileged',type:'terraform'},
+  {id:'ECS_TASK_NO_READONLY_ROOT',sev:'MEDIUM',desc:'ECS task containers should use read-only root FS',type:'terraform'},
+  {id:'SNS_TOPIC_NOT_ENCRYPTED',sev:'MEDIUM',desc:'SNS topics should be encrypted with KMS',type:'terraform'},
+  {id:'SQS_QUEUE_NOT_ENCRYPTED',sev:'MEDIUM',desc:'SQS queues should be encrypted with KMS',type:'terraform'},
+  {id:'DYNAMODB_NOT_ENCRYPTED',sev:'HIGH',desc:'DynamoDB tables should have encryption enabled',type:'terraform'},
+  {id:'ELASTICACHE_NO_ENCRYPTION_TRANSIT',sev:'HIGH',desc:'ElastiCache should encrypt data in transit',type:'terraform'},
+  {id:'ELASTICACHE_NO_ENCRYPTION_REST',sev:'HIGH',desc:'ElastiCache should encrypt data at rest',type:'terraform'},
+  {id:'ECR_IMAGE_SCANNING_DISABLED',sev:'MEDIUM',desc:'ECR repositories should scan images on push',type:'terraform'},
+  {id:'ECR_IMAGE_MUTABLE',sev:'MEDIUM',desc:'ECR repositories should use immutable image tags',type:'terraform'},
+  {id:'SECRETS_MANAGER_NO_ROTATION',sev:'MEDIUM',desc:'Secrets Manager secrets should auto-rotate',type:'terraform'},
+  {id:'CLOUDFRONT_HTTP_ALLOWED',sev:'HIGH',desc:'CloudFront distributions should redirect HTTP to HTTPS',type:'terraform'},
+];
+
+const SEV_ORDER = {CRITICAL:4, HIGH:3, MEDIUM:2, LOW:1};
+const SEV_COLORS = {CRITICAL:'var(--critical)', HIGH:'var(--high)', MEDIUM:'var(--medium)', LOW:'var(--low)'};
+
+// ── CLOCK ──
+function updateClock() {
+  document.getElementById('clockDisplay').textContent =
+    new Date().toLocaleTimeString('en-US', {hour12: false});
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ── NAV ──
+function showView(name, el) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  if (el) el.classList.add('active');
+  if (name === 'policies') renderPolicies('ALL');
+  if (name === 'history') renderHistory();
+}
+
+// ── HEALTH CHECK ──
+async function checkHealth() {
+  try {
+    const r = await fetch('/health');
+    const d = await r.json();
+    const dot = document.getElementById('statusDot');
+    const txt = document.getElementById('statusText');
+    if (d.status === 'healthy') {
+      dot.classList.remove('offline');
+      txt.textContent = 'SERVICE ONLINE';
+      loadMetrics();
+    updateRecentScans();
+    }
+  } catch(e) {
+    document.getElementById('statusDot').classList.add('offline');
+    document.getElementById('statusText').textContent = 'SERVICE OFFLINE';
+  }
+}
+
+// ── METRICS ──
+async function loadMetrics() {
+  try {
+    const r = await fetch('/metrics');
+    const d = await r.json();
+
+    document.getElementById('statTotal').textContent  = d.total_requests ?? 0;
+    document.getElementById('statBlocks').textContent = d.total_blocks   ?? 0;
+    document.getElementById('statAllows').textContent = d.total_allows   ?? 0;
+    document.getElementById('statRate').textContent   = (d.block_rate_percent ?? 0).toFixed(0) + '%';
+
+    // Ring
+    const pct = d.block_rate_percent ?? 0;
+    const circumference = 314;
+    const offset = circumference - (pct / 100) * circumference;
+    document.getElementById('ringCircle').style.strokeDashoffset = offset;
+    document.getElementById('ringPct').textContent = pct.toFixed(0) + '%';
+    document.getElementById('legendBlocks').textContent = d.total_blocks ?? 0;
+    document.getElementById('legendAllows').textContent = d.total_allows ?? 0;
+    document.getElementById('legendTotal').textContent  = d.total_requests ?? 0;
+
+    // Top violations
+    const container = document.getElementById('topViolations');
+    const violations = d.top_violations ?? [];
+    if (!violations.length) {
+      container.innerHTML = '<div style="color:var(--muted);font-size:11px;">No violations recorded yet</div>';
+      return;
+    }
+    const max = violations[0].count;
+    container.innerHTML = violations.map(v => `
+      <div class="viol-item">
+        <div class="viol-name">${v.rule}</div>
+        <div class="viol-bar-wrap">
+          <div class="viol-bar" style="width:${Math.round((v.count/max)*100)}%"></div>
+        </div>
+        <div class="viol-count">${v.count}</div>
+      </div>
+    `).join('');
+
+  } catch(e) { console.error('metrics error', e); }
+}
+
+// ── THRESHOLD ──
+function setThreshold(val, el) {
+  currentThreshold = val;
+  document.querySelectorAll('.threshold-pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+}
+
+// ── EXAMPLES ──
+const EXAMPLES = {
+  'bad-tf': {type:'terraform', code:`provider "aws" {
+  region     = "us-east-1"
+  access_key = "AKIAIOSFODNN7EXAMPLE"
+  secret_key = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+}
+
+resource "aws_s3_bucket" "data" {
+  bucket = "company-data"
+  acl    = "public-read"
+}
+
+resource "aws_security_group" "web" {
+  name = "web-sg"
+  ingress {
+    from_port   = 0
+    to_port     = 65535
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_db_instance" "db" {
+  identifier          = "mydb"
+  engine              = "mysql"
+  instance_class      = "db.m5.24xlarge"
+  username            = "admin"
+  password            = "Password123!"
+  publicly_accessible = true
+  storage_encrypted   = false
+}`},
+  'good-tf': {type:'terraform', code:`provider "aws" {
+  region = "us-east-1"
+}
+
+resource "aws_s3_bucket" "data" {
+  bucket = "company-data-secure"
+
+  server_side_encryption_configuration {
+    rule {
+      apply_server_side_encryption_by_default {
+        sse_algorithm = "AES256"
+      }
+    }
+  }
+
+  logging {
+    target_bucket = "company-data-secure"
+    target_prefix = "logs/"
+  }
+
+  versioning {
+    enabled = true
+  }
+
+  tags = {
+    Environment = "production"
+    Owner       = "devops"
+    CostCenter  = "engineering"
+  }
+}
+
+resource "aws_security_group" "web_sg" {
+  name = "web-sg-secure"
+
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["10.0.0.0/8"]
+  }
+}
+
+resource "aws_db_instance" "db" {
+  identifier                = "mydb-secure"
+  engine                    = "mysql"
+  instance_class            = "db.t3.medium"
+  username                  = "admin"
+  password                  = var.db_password
+  publicly_accessible       = false
+  storage_encrypted         = true
+  deletion_protection       = true
+  multi_az                  = true
+  backup_retention_period   = 7
+  auto_minor_version_upgrade = true
+  monitoring_interval       = 60
+  performance_insights_enabled = true
+  port                      = 3307
+
+  tags = {
+    Environment = "production"
+    Owner       = "devops"
+    CostCenter  = "engineering"
+  }
+}
+`},
+  'bad-docker': {type:'dockerfile', code:`FROM ubuntu:latest
+ENV PASSWORD=secret123
+ENV API_KEY=myapikey456
+RUN apt-get update && apt-get install -y python3
+EXPOSE 80
+CMD ["python3", "app.py"]`},
+  'good-docker': {type:'dockerfile', code:`FROM python:3.10.12-slim AS builder
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+FROM python:3.10.12-slim
+WORKDIR /app
+COPY --from=builder /usr/local/lib/python3.10/site-packages /usr/local/lib/python3.10/site-packages
+COPY . .
+RUN useradd -m appuser
+USER appuser
+EXPOSE 8080
+HEALTHCHECK --interval=30s --timeout=3s CMD curl -f http://localhost:8080/health || exit 1
+CMD ["python3", "app.py"]`},
+  'bad-k8s': {type:'yaml', code:`apiVersion: v1
+kind: Pod
+metadata:
+  name: insecure-pod
+spec:
+  hostNetwork: true
+  hostPID: true
+  containers:
+  - name: app
+    image: myapp:latest
+    securityContext:
+      privileged: true
+      allowPrivilegeEscalation: true`},
+};
+
+function loadExample(key) {
+  const ex = EXAMPLES[key];
+  if (!ex) return;
+  document.getElementById('codeInput').value = ex.code;
+  document.getElementById('codeType').value = ex.type;
+}
+
+// ── SCAN ──
+async function runScan() {
+  const content = document.getElementById('codeInput').value.trim();
+  if (!content) { alert('Paste some code first'); return; }
+
+  const codeType = document.getElementById('codeType').value;
+  const btn = document.getElementById('scanBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="loading"></div> SCANNING...';
+
+  document.getElementById('decisionBadge').className = 'decision-badge pending';
+  document.getElementById('decisionBadge').textContent = 'SCANNING...';
+  document.getElementById('resultBody').innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100px;gap:10px;color:var(--muted)"><div class="loading"></div> Analyzing...</div>';
+  document.getElementById('scanMeta').style.display = 'none';
+
+  const startTime = Date.now();
+  try {
+    const resp = await fetch('/analyze', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        content,
+        code_type: codeType,
+        filename: `scan.${codeType === 'terraform' ? 'tf' : codeType === 'dockerfile' ? 'Dockerfile' : 'yaml'}`
+      })
+    });
+
+    const data = await resp.json();
+    const elapsed = Date.now() - startTime;
+
+    // Apply threshold filter
+    const sevLevels = {LOW:1, MEDIUM:2, HIGH:3, CRITICAL:4};
+    const thresholdLevel = sevLevels[currentThreshold] || 1;
+    const filteredViolations = (data.violations || []).filter(v => (sevLevels[v.severity] || 1) >= thresholdLevel);
+    const finalDecision = filteredViolations.length > 0 ? 'BLOCK' : 'ALLOW';
+
+    // Update badge
+    const badge = document.getElementById('decisionBadge');
+    badge.className = 'decision-badge ' + finalDecision.toLowerCase();
+    badge.textContent = finalDecision;
+
+    // Render results
+    const body = document.getElementById('resultBody');
+    if (finalDecision === 'ALLOW') {
+      body.innerHTML = `
+        <div class="allow-result">
+          <div class="allow-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5"><polyline points="20,6 9,17 4,12"/></svg>
+          </div>
+          <div class="allow-title">DEPLOYMENT ALLOWED</div>
+          <div class="allow-sub">${data.violations?.length ? `${data.violations.length} violation(s) below threshold (${currentThreshold})` : 'No security violations detected'}</div>
+          <div class="allow-sub" style="margin-top:4px">Scanned in ${data.scan_time_ms}ms</div>
+        </div>`;
+    } else {
+      body.innerHTML = filteredViolations.sort((a,b) => (SEV_ORDER[b.severity]||0)-(SEV_ORDER[a.severity]||0))
+        .map((v, i) => `
+          <div class="violation-card ${v.severity}" style="animation-delay:${i*0.05}s">
+            <div class="v-top">
+              <div class="v-rule">${v.rule}</div>
+              <div class="v-sev ${v.severity}">${v.severity}</div>
+              ${v.line ? `<div class="v-line">line ${v.line}</div>` : ''}
+            </div>
+            <div class="v-msg">${v.message}</div>
+            <div class="v-rec">${v.recommendation}</div>
+          </div>`).join('');
+    }
+
+    // Meta bar
+    document.getElementById('scanMeta').style.display = 'flex';
+    document.getElementById('metaViolations').textContent = filteredViolations.length;
+    document.getElementById('metaDuration').textContent = data.scan_time_ms + 'ms';
+    document.getElementById('metaThreshold').textContent = currentThreshold;
+
+    // Save to history
+    const entry = {
+      id: scanHistory.length + 1,
+      time: new Date().toLocaleTimeString('en-US', {hour12:false}),
+      filename: `scan.${codeType === 'terraform' ? 'tf' : codeType === 'dockerfile' ? 'Dockerfile' : 'yaml'}`,
+      type: codeType,
+      violations: filteredViolations.length,
+      threshold: currentThreshold,
+      decision: finalDecision,
+      duration: data.scan_time_ms + 'ms',
+    };
+    scanHistory.unshift(entry);
+    document.getElementById('historyBadge').textContent = scanHistory.length;
+    updateRecentScans();
+
+  } catch(e) {
+    document.getElementById('resultBody').innerHTML = `<div class="alert error">Error connecting to service: ${e.message}</div>`;
+    document.getElementById('decisionBadge').className = 'decision-badge pending';
+    document.getElementById('decisionBadge').textContent = 'ERROR';
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7" cy="7" r="5"/><line x1="10.5" y1="10.5" x2="14" y2="14"/></svg> RUN SECURITY SCAN';
+
+  // Show PDF button after scan
+  document.getElementById('pdfBtn').style.display = 'inline-flex';
+}
+
+// ── AUTO-FIX ──
+async function runAutoFix() {
+  const content = document.getElementById('codeInput').value.trim();
+  if (!content) { alert('Paste some code first'); return; }
+
+  const codeType = document.getElementById('codeType').value;
+  const btn = document.getElementById('fixBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="loading"></div> FIXING...';
+
+  try {
+    const resp = await fetch('/fix', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ content, code_type: codeType })
+    });
+    const data = await resp.json();
+
+    if (data.total_fixes === 0) {
+      document.getElementById('resultBody').innerHTML = `
+        <div class="allow-result">
+          <div class="allow-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5"><polyline points="20,6 9,17 4,12"/></svg>
+          </div>
+          <div class="allow-title">CODE IS ALREADY SECURE</div>
+          <div class="allow-sub">No auto-fixes needed</div>
+        </div>`;
+      document.getElementById('decisionBadge').className = 'decision-badge allow';
+      document.getElementById('decisionBadge').textContent = 'CLEAN';
+    } else {
+      // Show diff and fixes
+      const diffHtml = (data.diff || '').split('\n').map(line => {
+        if (line.startsWith('+') && !line.startsWith('+++')) return `<span class="line-add">${escapeHtml(line)}</span>`;
+        if (line.startsWith('-') && !line.startsWith('---')) return `<span class="line-del">${escapeHtml(line)}</span>`;
+        if (line.startsWith('@@')) return `<span class="line-info">${escapeHtml(line)}</span>`;
+        return escapeHtml(line);
+      }).join('\n');
+
+      const fixesHtml = data.fixes_applied.map(f => `
+        <div class="fix-item">
+          <div class="fix-rule">${f.rule_id}</div>
+          <div class="fix-desc">${f.description}</div>
+        </div>`).join('');
+
+      document.getElementById('resultBody').innerHTML = `
+        <div class="fix-result">
+          <div class="fix-header">
+            <h3>🔧 Auto-Fix Applied</h3>
+            <span class="fix-badge">${data.total_fixes} fix(es)</span>
+          </div>
+          <div class="fix-tabs">
+            <button class="fix-tab active" onclick="showFixTab('diff', this)">Diff</button>
+            <button class="fix-tab" onclick="showFixTab('fixes', this)">Fixes List</button>
+            <button class="fix-tab" onclick="showFixTab('fixed', this)">Fixed Code</button>
+          </div>
+          <div id="fixTabDiff" class="fix-diff">${diffHtml}</div>
+          <div id="fixTabFixes" style="display:none">${fixesHtml}</div>
+          <div id="fixTabFixed" class="fix-diff" style="display:none">${escapeHtml(data.fixed_code)}</div>
+          <button class="btn btn-fix" onclick="applyFix()" style="margin-top:12px">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="1 8 5 12 15 2"/></svg>
+            APPLY FIX TO EDITOR
+          </button>
+        </div>`;
+
+      document.getElementById('decisionBadge').className = 'decision-badge allow';
+      document.getElementById('decisionBadge').textContent = `FIXED (${data.total_fixes})`;
+
+      // Auto-apply fixed code to the editor so next scan uses it
+      window._lastFixedCode = data.fixed_code;
+      document.getElementById('codeInput').value = data.fixed_code;
+      const ta = document.getElementById('codeInput');
+      ta.style.borderColor = 'var(--green)';
+      setTimeout(() => { ta.style.borderColor = ''; }, 2000);
+    }
+
+  } catch(e) {
+    document.getElementById('resultBody').innerHTML = `<div class="alert error">Auto-fix error: ${e.message}</div>`;
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 1L15 5L5 15H1V11L11 1Z"/></svg> AUTO-FIX CODE';
+}
+
+function showFixTab(tab, el) {
+  document.getElementById('fixTabDiff').style.display = tab === 'diff' ? 'block' : 'none';
+  document.getElementById('fixTabFixes').style.display = tab === 'fixes' ? 'block' : 'none';
+  document.getElementById('fixTabFixed').style.display = tab === 'fixed' ? 'block' : 'none';
+  document.querySelectorAll('.fix-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function applyFix() {
+  if (window._lastFixedCode) {
+    document.getElementById('codeInput').value = window._lastFixedCode;
+    // Flash the textarea green briefly
+    const ta = document.getElementById('codeInput');
+    ta.style.borderColor = 'var(--green)';
+    setTimeout(() => { ta.style.borderColor = ''; }, 1500);
+  }
+}
+
+function escapeHtml(str) {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function downloadPDF() {
+  window.open('/report/last-scan/pdf', '_blank');
+}
+
+// ── RECENT SCANS ──
+async function updateRecentScans() {
+  const tbody = document.getElementById('recentScansBody');
+  try {
+    const r = await fetch('/history?limit=5');
+    const data = await r.json();
+    if (!data.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No scans yet</td></tr>';
+      return;
+    }
+    tbody.innerHTML = data.map(s => `
+      <tr>
+        <td style="color:var(--muted)">${s.timestamp}</td>
+        <td>${s.filename || 'unknown'}</td>
+        <td style="color:var(--muted)">${s.code_type}</td>
+        <td>${s.violations_count}</td>
+        <td class="badge-${s.decision.toLowerCase()}">${s.decision}</td>
+        <td style="color:var(--muted)">${s.scan_time_ms}ms</td>
+      </tr>`).join('');
+  } catch(e) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">Error loading history</td></tr>';
+  }
+}
+
+// ── HISTORY ──
+async function renderHistory() {
+  const tbody = document.getElementById('historyBody');
+  try {
+    const r = await fetch('/history?limit=50');
+    const data = await r.json();
+    if (!data.length) {
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px;">No scan history yet</td></tr>';
+      return;
+    }
+    tbody.innerHTML = data.map(s => `
+      <tr>
+        <td style="color:var(--muted)">#${s.id}</td>
+        <td style="color:var(--muted)">${s.timestamp}</td>
+        <td>${s.filename || 'unknown'}</td>
+        <td style="color:var(--muted)">${s.code_type}</td>
+        <td>${s.violations_count}</td>
+        <td style="color:var(--muted)">${s.block_threshold}</td>
+        <td class="badge-${s.decision.toLowerCase()}">${s.decision}</td>
+        <td style="color:var(--muted)">${s.scan_time_ms}ms</td>
+      </tr>`).join('');
+    document.getElementById('historyBadge').textContent = data.length;
+  } catch(e) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px;">Error loading history</td></tr>';
+  }
+}
+
+// ── POLICIES ──
+let currentPolicyFilter = 'ALL';
+
+function filterPolicies(filter, el) {
+  currentPolicyFilter = filter;
+  document.querySelectorAll('#view-policies .threshold-pill').forEach(p => p.classList.remove('active'));
+  if (el) el.classList.add('active');
+  renderPolicies(filter);
+}
+
+function renderPolicies(filter) {
+  const sevColors = {CRITICAL:'var(--critical)',HIGH:'var(--high)',MEDIUM:'var(--medium)',LOW:'var(--low)'};
+  const sevBg = {
+    CRITICAL:'rgba(255,45,85,0.15)',
+    HIGH:'rgba(255,107,53,0.15)',
+    MEDIUM:'rgba(255,209,102,0.15)',
+    LOW:'rgba(6,214,160,0.15)'
+  };
+
+  let filtered = POLICIES;
+  if (filter === 'terraform') filtered = POLICIES.filter(p => p.type === 'terraform');
+  else if (filter === 'docker') filtered = POLICIES.filter(p => p.type === 'docker');
+  else if (filter === 'k8s') filtered = POLICIES.filter(p => p.type === 'k8s');
+  else if (filter !== 'ALL') filtered = POLICIES.filter(p => p.sev === filter);
+
+  document.getElementById('policiesGrid').innerHTML = filtered.map(p => `
+    <div class="policy-card">
+      <div class="policy-id">${p.id}</div>
+      <div class="policy-desc">${p.desc}</div>
+      <span class="policy-sev" style="background:${sevBg[p.sev]};color:${sevColors[p.sev]}">${p.sev}</span>
+    </div>`).join('');
+}
+
+// ── INIT ──
+checkHealth();
+setInterval(() => { checkHealth(); loadMetrics(); }, 10000);
+renderPolicies('ALL');
+</script>
+</body>
+</html>

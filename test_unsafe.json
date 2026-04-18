@@ -1,0 +1,4 @@
+{
+  "code_type": "terraform",
+  "content": "resource \"aws_s3_bucket\" \"bad\" {\n  bucket = \"my-bucket\"\n  acl = \"public-read\"\n}"
+}

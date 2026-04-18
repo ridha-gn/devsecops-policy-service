@@ -1,0 +1,68 @@
+stages:
+  - security
+  - deploy
+
+variables:
+  POLICY_SERVICE_URL: "http://policy-service:8000"
+
+security_scan:
+  stage: security
+  image: curlimages/curl:latest
+  services:
+    - name: devsecops-policy-service:latest
+      alias: policy-service
+  script:
+    - echo "Starting security scan of infrastructure code..."
+    - |
+      VIOLATIONS=0
+      for file in $(find . -name "*.tf" -o -name "Dockerfile" -o -name "*.yaml"); do
+        echo "Scanning $file..."
+        
+        if [[ $file == *.tf ]]; then
+          CODE_TYPE="terraform"
+        elif [[ $file == *Dockerfile* ]]; then
+          CODE_TYPE="dockerfile"
+        else
+          CODE_TYPE="yaml"
+        fi
+        
+        CONTENT=$(cat $file | sed 's/"/\\"/g' | awk '{printf "%s\\n", $0}')
+        
+        RESPONSE=$(curl -s -X POST ${POLICY_SERVICE_URL}/analyze \
+          -H "Content-Type: application/json" \
+          -d "{\"code_type\":\"${CODE_TYPE}\",\"content\":\"${CONTENT}\"}")
+        
+        DECISION=$(echo $RESPONSE | grep -o '"decision":"[^"]*"' | cut -d'"' -f4)
+        
+        if [ "$DECISION" = "BLOCK" ]; then
+          echo "❌ Security violations found in $file"
+          echo $RESPONSE | python3 -c "import sys, json; print(json.dumps(json.load(sys.stdin), indent=2))"
+          VIOLATIONS=$((VIOLATIONS+1))
+        else
+          echo "✅ $file passed security scan"
+        fi
+      done
+      
+      if [ $VIOLATIONS -gt 0 ]; then
+        echo ""
+        echo "❌ Security scan failed: $VIOLATIONS file(s) with violations"
+        exit 1
+      else
+        echo ""
+        echo "✅ All files passed security scan"
+      fi
+  only:
+    - branches
+    - merge_requests
+
+deploy_infrastructure:
+  stage: deploy
+  script:
+    - echo "Deploying infrastructure..."
+    - terraform init
+    - terraform plan
+    - terraform apply -auto-approve
+  only:
+    - main
+  dependencies:
+    - security_scan

@@ -1,0 +1,187 @@
+pipeline {
+    agent any
+    
+    environment {
+        POLICY_SERVICE_URL = 'http://policy-service:8000'
+    }
+    
+    stages {
+        stage('Start Policy Service') {
+            steps {
+                script {
+                    echo 'Starting DevSecOps Policy Service...'
+                    sh '''
+                        docker run -d --name policy-service \
+                          -p 8000:8000 \
+                          devsecops-policy-service:latest
+                    '''
+                    
+                    echo 'Waiting for service to be ready...'
+                    sh 'timeout 30 bash -c "until curl -f http://localhost:8000/health; do sleep 2; done"'
+                }
+            }
+        }
+        
+        stage('Security Scan') {
+            steps {
+                script {
+                    def violations = []
+                    
+                    echo 'Scanning Terraform files...'
+                    def terraformFiles = findFiles(glob: '**/*.tf')
+                    terraformFiles.each { file ->
+                        echo "Scanning ${file.path}..."
+                        
+                        def content = readFile(file.path)
+                        def payload = groovy.json.JsonOutput.toJson([
+                            code_type: 'terraform',
+                            content: content
+                        ])
+                        
+                        def response = sh(
+                            script: """
+                            curl -s -X POST http://localhost:8000/analyze \\
+                              -H 'Content-Type: application/json' \\
+                              -d '${payload}'
+                            """,
+                            returnStdout: true
+                        ).trim()
+                        
+                        def result = readJSON text: response
+                        
+                        if (result.decision == 'BLOCK') {
+                            violations.add([
+                                file: file.path,
+                                type: 'terraform',
+                                violations: result.violations
+                            ])
+                            echo "❌ ${file.path}: ${result.violations.size()} violation(s)"
+                        } else {
+                            echo "✅ ${file.path}: Passed"
+                        }
+                    }
+                    
+                    echo 'Scanning Dockerfiles...'
+                    def dockerFiles = findFiles(glob: '**/Dockerfile*')
+                    dockerFiles.each { file ->
+                        echo "Scanning ${file.path}..."
+                        
+                        def content = readFile(file.path)
+                        def payload = groovy.json.JsonOutput.toJson([
+                            code_type: 'dockerfile',
+                            content: content
+                        ])
+                        
+                        def response = sh(
+                            script: """
+                            curl -s -X POST http://localhost:8000/analyze \\
+                              -H 'Content-Type: application/json' \\
+                              -d '${payload}'
+                            """,
+                            returnStdout: true
+                        ).trim()
+                        
+                        def result = readJSON text: response
+                        
+                        if (result.decision == 'BLOCK') {
+                            violations.add([
+                                file: file.path,
+                                type: 'dockerfile',
+                                violations: result.violations
+                            ])
+                            echo "❌ ${file.path}: ${result.violations.size()} violation(s)"
+                        } else {
+                            echo "✅ ${file.path}: Passed"
+                        }
+                    }
+                    
+                    echo 'Scanning Kubernetes manifests...'
+                    def k8sFiles = findFiles(glob: '**/*.yaml')
+                    k8sFiles.each { file ->
+                        if (!file.path.contains('.gitlab-ci') && !file.path.contains('github-actions')) {
+                            echo "Scanning ${file.path}..."
+                            
+                            def content = readFile(file.path)
+                            def payload = groovy.json.JsonOutput.toJson([
+                                code_type: 'yaml',
+                                content: content
+                            ])
+                            
+                            def response = sh(
+                                script: """
+                                curl -s -X POST http://localhost:8000/analyze \\
+                                  -H 'Content-Type: application/json' \\
+                                  -d '${payload}'
+                                """,
+                                returnStdout: true
+                            ).trim()
+                            
+                            def result = readJSON text: response
+                            
+                            if (result.decision == 'BLOCK') {
+                                violations.add([
+                                    file: file.path,
+                                    type: 'kubernetes',
+                                    violations: result.violations
+                                ])
+                                echo "❌ ${file.path}: ${result.violations.size()} violation(s)"
+                            } else {
+                                echo "✅ ${file.path}: Passed"
+                            }
+                        }
+                    }
+                    
+                    if (violations.size() > 0) {
+                        echo "\n❌ Security scan failed: ${violations.size()} file(s) with violations\n"
+                        
+                        violations.each { v ->
+                            echo "File: ${v.file}"
+                            v.violations.each { violation ->
+                                echo "  - ${violation.rule} (${violation.severity}): ${violation.message}"
+                            }
+                            echo ""
+                        }
+                        
+                        error("Security violations detected")
+                    } else {
+                        echo "\n✅ All files passed security scan"
+                    }
+                }
+            }
+        }
+        
+        stage('Get Metrics') {
+            steps {
+                script {
+                    echo 'Retrieving scan metrics...'
+                    sh '''
+                        curl -s http://localhost:8000/metrics | python3 -m json.tool
+                    '''
+                }
+            }
+        }
+        
+        stage('Deploy') {
+            when {
+                branch 'main'
+                expression { currentBuild.result == null || currentBuild.result == 'SUCCESS' }
+            }
+            steps {
+                echo 'Deploying infrastructure...'
+                // Add your deployment steps here
+            }
+        }
+    }
+    
+    post {
+        always {
+            script {
+                echo 'Cleaning up...'
+                sh '''
+                    docker stop policy-service || true
+                    docker rm policy-service || true
+                '''
+            }
+        }
+    }
+}

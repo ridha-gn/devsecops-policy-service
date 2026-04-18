@@ -1,0 +1,54 @@
+policies:
+  PUBLIC_S3_BUCKET:
+    enabled: true
+    severity: HIGH
+    description: "Detects publicly accessible S3 buckets"
+  
+  HARDCODED_SECRET:
+    enabled: true
+    severity: CRITICAL
+    description: "Finds hardcoded secrets and credentials"
+  
+  UNENCRYPTED_STORAGE:
+    enabled: true
+    severity: HIGH
+    description: "Checks for missing encryption configuration"
+  
+  DOCKER_ROOT_USER:
+    enabled: true
+    severity: MEDIUM
+    description: "Ensures containers don't run as root"
+  
+  MISSING_REQUIRED_TAGS:
+    enabled: true
+    severity: LOW
+    description: "Validates required tags are present"
+  
+  INSECURE_SECURITY_GROUP:
+    enabled: true
+    severity: HIGH
+    description: "Detects overly permissive security groups"
+  
+  MISSING_LOGGING:
+    enabled: true
+    severity: MEDIUM
+    description: "Ensures logging is enabled"
+  
+  PUBLIC_DATABASE:
+    enabled: true
+    severity: CRITICAL
+    description: "Prevents publicly accessible databases"
+  
+  EXPENSIVE_INSTANCE_TYPE:
+    enabled: true
+    severity: MEDIUM
+    description: "Warns about expensive instance types"
+
+general:
+  required_tags:
+    - Environment
+    - Owner
+    - CostCenter
+  
+  max_file_size_mb: 5
+  scan_timeout_seconds: 30

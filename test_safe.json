@@ -1,0 +1,4 @@
+{
+  "code_type": "terraform",
+  "content": "resource \"aws_s3_bucket\" \"safe\" {\n  bucket = \"my-bucket\"\n  acl = \"private\"\n  server_side_encryption_configuration {\n    rule {\n      apply_server_side_encryption_by_default {\n        sse_algorithm = \"AES256\"\n      }\n    }\n  }\n  tags = {\n    Environment = \"prod\"\n    Owner = \"team\"\n    CostCenter = \"engineering\"\n  }\n}"
+}

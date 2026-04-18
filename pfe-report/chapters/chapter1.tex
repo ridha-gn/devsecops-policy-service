@@ -1,0 +1,336 @@
+% ============================================================
+% CHAPTER 1: General Project Presentation
+% (Following Tarek's Chapter 1 structure exactly)
+% ============================================================
+
+\chapter{General Project Presentation}
+
+\section{Introduction}
+
+This first chapter is structured around three main axes that lay the foundations of our work. First, we present the academic context within which this end-of-studies project was carried out. Subsequently, we present a critical analysis of the current state of infrastructure security tooling, highlighting the limitations of existing solutions, in order to introduce the centralized approach we propose. Finally, we detail the development methodology adopted to structure the project, from requirements analysis through to technical implementation.
+
+% ============================================================
+\section{Academic Context}
+% ============================================================
+
+\subsection{Presentation of ISITCOM}
+
+This end-of-studies project was carried out at the \textbf{Institut Supérieur d'Informatique et des Techniques de Communication de Hammam Sousse (ISITCOM)}, a higher education institution affiliated with the University of Sousse, Tunisia. ISITCOM specializes in training students in computer science, telecommunications, and multimedia, offering programs at the bachelor's and master's levels.
+
+The institute provides a stimulating academic environment with modern laboratories, qualified faculty, and a strong emphasis on practical skills and industry-relevant training. ISITCOM's curriculum in Telecommunications and Computer Science covers a broad range of topics including networking, software engineering, web development, and information security, making it the ideal setting for a project at the intersection of development, security, and operations.
+
+This project was supervised by \textbf{M. Slim Abd Elbari}, Head of Department, whose guidance and expertise in software engineering were instrumental throughout the development process.
+
+% TODO: INSERT ISITCOM LOGO/PHOTO HERE
+% \begin{figure}[H]
+%     \centering
+%     \includegraphics[width=0.5\textwidth]{figures/isitcom.png}
+%     \caption{ISITCOM Hammam Sousse}
+%     \label{fig:isitcom}
+% \end{figure}
+
+% ============================================================
+\section{Preliminary Study}
+% ============================================================
+
+\subsection{Project Context}
+
+In the context of modern cloud computing, organizations increasingly rely on Infrastructure as Code (IaC) to define, provision, and manage their computing resources programmatically. Tools such as Terraform (for cloud resource provisioning), Docker (for application containerization), and Kubernetes (for container orchestration) have become industry standards.
+
+However, this codification of infrastructure introduces new attack vectors. Unlike traditional application security, infrastructure misconfigurations operate at a lower level—directly affecting network access, data storage, and identity management. A single misconfigured security group rule can expose an entire database to the public internet. A hardcoded credential in a Terraform file, once committed to version control, can provide unauthorized access to critical cloud resources.
+
+The DevSecOps movement addresses this by integrating security practices directly into the software development lifecycle, rather than treating security as a separate, post-development concern. The key principle is ``shift-left security'': moving security checks as early as possible in the development pipeline to catch and remediate vulnerabilities before they reach production.
+
+\subsection{Problem Statement}
+
+Currently, infrastructure security in many organizations suffers from several critical weaknesses:
+
+\begin{itemize}
+    \item \textbf{Manual security reviews are slow}: Traditional code reviews for security issues take 2--3 days per deployment, creating a bottleneck in the CI/CD pipeline.
+    \item \textbf{Reviews are inconsistent}: Different reviewers may apply different standards, leading to uneven security enforcement.
+    \item \textbf{Reviews do not scale}: With teams deploying multiple times per day, human reviewers cannot keep pace.
+    \item \textbf{Vulnerabilities reach production}: Without automated gates, insecure infrastructure code can be deployed directly to production environments.
+\end{itemize}
+
+The consequences of these failures are well-documented in real-world incidents:
+
+\begin{table}[H]
+\centering
+\caption{Major cloud security incidents caused by infrastructure misconfigurations}
+\label{tab:incidents}
+\begin{tabular}{|p{2.5cm}|p{4cm}|p{3.5cm}|p{3cm}|}
+\hline
+\textbf{Organization} & \textbf{Root Cause} & \textbf{Impact} & \textbf{Financial Cost} \\
+\hline
+Capital One (2019) & Public S3 bucket misconfiguration & 100M+ customer records exposed & \$80M fine \\
+\hline
+Uber (2016) & Exposed database credentials & 57M user records stolen & \$148M settlement \\
+\hline
+Toyota (2023) & Leaked credentials in code & 10 years of customer data exposed & Undisclosed \\
+\hline
+\end{tabular}
+\end{table}
+
+The challenge is clear: \textit{how can organizations enforce security policies automatically, at machine speed, directly within their CI/CD pipelines, while also educating developers about security best practices?}
+
+% ============================================================
+\subsection{Study of Existing Tools}
+% ============================================================
+
+Several tools currently address infrastructure security scanning. We analyzed four major solutions to understand their strengths and limitations.
+
+\subsubsection{Checkov (Bridgecrew / Palo Alto Networks)}
+
+Checkov is the most widely-used open-source infrastructure-as-code scanner, developed by Bridgecrew (acquired by Palo Alto Networks). Written in Python, it offers over 1,000 pre-built security policies covering Terraform, CloudFormation, Kubernetes, Dockerfile, Helm, and more.
+
+\textbf{Advantages:}
+\begin{itemize}
+    \item Comprehensive coverage with 1,000+ policies across multiple cloud providers (AWS, Azure, GCP).
+    \item Active community with 6,000+ GitHub stars and frequent updates.
+    \item Compliance framework mappings (CIS, PCI-DSS, HIPAA).
+\end{itemize}
+
+\textbf{Limitations:}
+\begin{itemize}
+    \item Slow performance: 150--300ms average response time.
+    \item Steep learning curve with numerous configuration options.
+    \item Violation messages are brief and not educational.
+    \item YAML-based policy customization is less flexible than code-based approaches.
+\end{itemize}
+
+% TODO: INSERT SCREENSHOT OF CHECKOV INTERFACE
+% \begin{figure}[H]
+%     \centering
+%     \includegraphics[width=0.8\textwidth]{figures/checkov.png}
+%     \caption{Checkov scanning interface}
+%     \label{fig:checkov}
+% \end{figure}
+
+\subsubsection{tfsec (Aqua Security)}
+
+tfsec is a Terraform-specific static analysis security scanner written in Go. It focuses exclusively on Terraform HCL files and provides fast scanning with approximately 150 pre-built checks.
+
+\textbf{Advantages:}
+\begin{itemize}
+    \item Fast scanning due to Go compilation.
+    \item Deep Terraform-specific knowledge.
+    \item Simple to use with minimal configuration.
+\end{itemize}
+
+\textbf{Limitations:}
+\begin{itemize}
+    \item Supports only Terraform (no Docker or Kubernetes).
+    \item Basic violation messages without educational context.
+    \item Custom checks require Go programming knowledge.
+\end{itemize}
+
+% TODO: INSERT SCREENSHOT OF TFSEC INTERFACE
+% \begin{figure}[H]
+%     \centering
+%     \includegraphics[width=0.8\textwidth]{figures/tfsec.png}
+%     \caption{tfsec scanning output}
+%     \label{fig:tfsec}
+% \end{figure}
+
+\subsubsection{Trivy (Aqua Security)}
+
+Trivy is a comprehensive vulnerability and misconfiguration scanner that covers containers, IaC, filesystems, secrets, and license detection. It is written in Go and maintained by Aqua Security.
+
+\textbf{Advantages:}
+\begin{itemize}
+    \item Broad scope covering vulnerabilities, IaC, and secrets.
+    \item Daily CVE database updates.
+    \item Simple CLI interface with Docker image available.
+\end{itemize}
+
+\textbf{Limitations:}
+\begin{itemize}
+    \item IaC scanning is a secondary feature, not its primary focus.
+    \item Less detailed IaC-specific checks compared to specialized tools.
+    \item Requires CVE database downloads for vulnerability scanning.
+\end{itemize}
+
+% TODO: INSERT SCREENSHOT OF TRIVY INTERFACE
+% \begin{figure}[H]
+%     \centering
+%     \includegraphics[width=0.8\textwidth]{figures/trivy.png}
+%     \caption{Trivy scanning results}
+%     \label{fig:trivy}
+% \end{figure}
+
+\subsubsection{OPA — Open Policy Agent (CNCF)}
+
+OPA is a general-purpose policy engine and a CNCF graduated project. Unlike the other tools, OPA is a \textit{framework} rather than a ready-to-use scanner. Users must write policies from scratch using the Rego language.
+
+\textbf{Advantages:}
+\begin{itemize}
+    \item Ultimate flexibility for any policy domain.
+    \item Industry standard, widely adopted for Kubernetes admission control.
+    \item Efficient Go-based engine.
+\end{itemize}
+
+\textbf{Limitations:}
+\begin{itemize}
+    \item No pre-built policies: everything must be written from scratch.
+    \item Rego language has a significant learning curve.
+    \item Requires substantial upfront investment before providing value.
+\end{itemize}
+
+% TODO: INSERT SCREENSHOT OF OPA INTERFACE
+% \begin{figure}[H]
+%     \centering
+%     \includegraphics[width=0.8\textwidth]{figures/opa.png}
+%     \caption{OPA Rego policy example}
+%     \label{fig:opa}
+% \end{figure}
+
+% ============================================================
+\subsection{Comparative Analysis}
+% ============================================================
+
+Table~\ref{tab:comparison} presents a comprehensive comparison of the four existing tools against our proposed solution.
+
+\begin{table}[H]
+\centering
+\caption{Comparative analysis of existing infrastructure security tools}
+\label{tab:comparison}
+\small
+\begin{tabular}{|p{3cm}|c|c|c|c|c|}
+\hline
+\textbf{Criteria} & \textbf{Our Service} & \textbf{Checkov} & \textbf{tfsec} & \textbf{Trivy} & \textbf{OPA} \\
+\hline
+Response Time & \cellcolor{green!15}\textbf{46ms} & 150--300ms & $\sim$150ms & $\sim$200ms & varies \\
+\hline
+Pre-built Policies & 100 & \cellcolor{green!15}\textbf{1000+} & 150+ & varies & 0 \\
+\hline
+IaC Formats & TF+Docker+K8s & \cellcolor{green!15}many & TF only & many & any \\
+\hline
+Educational & \cellcolor{green!15}\textbf{Yes} & No & No & No & No \\
+\hline
+Dashboard & \cellcolor{green!15}\textbf{Yes} & No & No & No & No \\
+\hline
+Threshold Config & \cellcolor{green!15}\textbf{Yes} & No & No & No & No \\
+\hline
+Ready to Use & \cellcolor{green!15}\textbf{Yes} & Yes & Yes & Yes & No \\
+\hline
+Multi-Cloud & AWS & \cellcolor{green!15}\textbf{Full} & Full & Full & N/A \\
+\hline
+\end{tabular}
+\end{table}
+
+\noindent The analysis reveals that while existing tools like Checkov offer comprehensive policy coverage, they lack the combination of speed, educational value, and simplicity that our approach provides. No existing tool offers all three: fast response times ($<$50ms), detailed violation explanations with remediation recommendations, and a built-in real-time dashboard.
+
+% ============================================================
+\subsection{Proposed Solution}
+% ============================================================
+
+Our project proposes a \textbf{DevSecOps Policy-as-Code microservice} designed as a lightweight, fast, and educational infrastructure security scanner. The solution is built around the following core principles:
+
+\begin{enumerate}
+    \item \textbf{Speed}: Average response time of 46ms, enabling integration into every CI/CD pipeline run without creating bottlenecks.
+    \item \textbf{Education}: Every violation includes a detailed message explaining \textit{what} is wrong, \textit{why} it is dangerous, and \textit{how} to fix it—transforming security enforcement into a learning opportunity.
+    \item \textbf{Multi-format support}: A single service handles Terraform, Dockerfile, and Kubernetes YAML through a unified normalizer architecture.
+    \item \textbf{Comprehensive coverage}: 100 security policies organized across 14 categories covering AWS resources, Docker best practices, Kubernetes security, networking, IAM, monitoring, and more.
+    \item \textbf{Configurable thresholds}: Administrators can configure the minimum severity level (CRITICAL, HIGH, MEDIUM, LOW) required to block a deployment.
+    \item \textbf{Portability}: The entire solution runs offline with no cloud dependencies, making it suitable for demonstrations, education, and air-gapped environments.
+\end{enumerate}
+
+% ============================================================
+\section{Work Methodology}
+% ============================================================
+
+The development of this project, at the convergence of web development, security engineering, and DevOps integration, requires a methodological framework combining conceptual rigor with operational flexibility.
+
+Working independently throughout the entire software development lifecycle (SDLC), the primary challenge was synchronizing the development of multiple technical layers—parsing, normalization, policy evaluation, and CI/CD integration. To mitigate risks associated with technical complexity and ensure incremental delivery of high quality, we adopted the Agile methodology.
+
+\subsection{Scrum Framework}
+
+Scrum \cite{scrumguide} is an empirical framework that enables navigation through technical complexity while guaranteeing the delivery of high-value products. Far from being a rigid method or a linear process, Scrum provides a structured environment that promotes intellectual agility and operational creativity.
+
+By adopting this framework, emphasis is placed on transparency and regular inspection, allowing evaluation of the effectiveness of development strategies. For this project, Scrum facilitated continuous improvement not only of technical functionalities but also of personal organization, enabling iterative adjustment of design techniques.
+
+\subsection{Scrum Process}
+
+Scrum structures project management around an iterative and incremental process. By dividing development into short cycles called \textit{sprints} (typically 2 to 4 weeks), it guarantees regular delivery of a functional product. This dynamic relies on three pillars of empiricism:
+
+\begin{itemize}
+    \item \textbf{Transparency}: Complete visibility on progress for all stakeholders.
+    \item \textbf{Inspection}: Periodic evaluation of results and methods to detect deviations.
+    \item \textbf{Adaptation}: Flexibility to adjust trajectory based on feedback.
+\end{itemize}
+
+% TODO: INSERT SCRUM PROCESS DIAGRAM HERE
+% Use draw.io to create a Scrum process flow diagram showing:
+% Product Backlog → Sprint Planning → Sprint (2 weeks) → Sprint Review → Sprint Retrospective → Increment
+% \begin{figure}[H]
+%     \centering
+%     \includegraphics[width=0.9\textwidth]{figures/scrum-process.png}
+%     \caption{Scrum development process}
+%     \label{fig:scrum-process}
+% \end{figure}
+
+\subsection{Advantages of Scrum}
+
+One of the major strengths of Scrum lies in its great flexibility, allowing adaptation to evolving requirements through its iterative approach. The sustained rhythm of sprints (2-week cycles in our case) guarantees continuous value delivery, fostering a rapid and constructive feedback cycle. This framework also reinforces transparency through daily rituals and end-of-cycle reviews, ensuring constant alignment with project objectives. Finally, Scrum establishes a culture of continuous improvement: each retrospective becomes a lever for optimizing internal processes and increasing productivity.
+
+\subsection{Scrum Actors}
+
+Although Scrum is traditionally collaborative, its individual application provided rigorous discipline through thematic sprint planning:
+
+\begin{itemize}
+    \item \textbf{Product Owner}: Ridha Gnounou — responsible for defining and prioritizing the product backlog based on project requirements.
+    \item \textbf{Scrum Master}: Ridha Gnounou — ensuring adherence to Scrum principles and removing obstacles.
+    \item \textbf{Development Team}: Ridha Gnounou — responsible for implementing all sprint tasks.
+    \item \textbf{Stakeholder}: M. Slim Abd Elbari — academic supervisor providing guidance and validation.
+\end{itemize}
+
+% TODO: INSERT SCRUM ACTORS DIAGRAM HERE
+% \begin{figure}[H]
+%     \centering
+%     \includegraphics[width=0.7\textwidth]{figures/scrum-actors.png}
+%     \caption{Scrum actors in the project}
+%     \label{fig:scrum-actors}
+% \end{figure}
+
+\subsection{Scrum Artifacts}
+
+\begin{enumerate}
+    \item \textbf{Product Backlog}: The unique source of requirements for the product. A dynamic, priority-ordered list recording all planned functionalities.
+    \item \textbf{Sprint Backlog}: Priority items extracted from the Product Backlog that are committed for completion during the current sprint, along with a concrete action plan.
+    \item \textbf{Increment}: The concrete value added to the product at the end of each sprint—a functional, tested, and potentially deliverable version.
+\end{enumerate}
+
+% ============================================================
+\section{Iterative Project Planning}
+% ============================================================
+
+To ensure optimal organization of our work, we adopted an Agile approach by segmenting the project into four sprints. Each iteration constitutes a milestone with specific objectives to achieve within a defined time interval. The detailed breakdown is as follows:
+
+\begin{table}[H]
+\centering
+\caption{Sprint planning overview}
+\label{tab:sprints}
+\begin{tabular}{|c|l|l|l|}
+\hline
+\textbf{Sprint} & \textbf{Period} & \textbf{Duration} & \textbf{Objective} \\
+\hline
+1 & Feb 3 -- Feb 14, 2026 & 2 weeks & Research \& Foundation \\
+\hline
+2 & Feb 17 -- Feb 28, 2026 & 2 weeks & Parsers \& Normalizer \\
+\hline
+3 & Mar 2 -- Mar 13, 2026 & 2 weeks & Policy Engine \& 100 Rules \\
+\hline
+4 & Mar 16 -- Apr 10, 2026 & 4 weeks & CI/CD, Dashboard \& Demo \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{UML Modeling Language}
+
+The design phase of our application relies on the Unified Modeling Language (UML) \cite{uml}. Adopting this standard allowed us to develop a coherent and rigorous visual representation of the system. Through various diagrams, we were able to model with precision the data structures, behavioral logic of objects, and interaction flows between different software components. The detailed UML diagrams are presented in Chapter 2.
+
+% ============================================================
+\section{Conclusion}
+% ============================================================
+
+This first chapter laid the foundations of our study by presenting the context, the major objectives, and the specific requirements of our project, while analyzing the existing landscape of infrastructure security tools. We justified the adoption of the Scrum framework as our management methodology, highlighting the added value of its iterative approach. Finally, the introduction of UML as our modeling language established the conceptual framework necessary for the application design. The following chapter will be devoted to the technical aspects of this solution, from its detailed design to its effective implementation.

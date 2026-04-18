@@ -1,0 +1,54 @@
+{
+  "name": "devsecops-policy-scanner",
+  "displayName": "DevSecOps Policy Scanner",
+  "description": "Scans Terraform, Dockerfile, and Kubernetes YAML files for security violations using the DevSecOps Policy Service",
+  "version": "1.0.0",
+  "publisher": "ridha-gnounou",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": ["Linters", "Other"],
+  "activationEvents": [
+    "onLanguage:terraform",
+    "onLanguage:dockerfile",
+    "onLanguage:yaml",
+    "onLanguage:plaintext"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "DevSecOps Policy Scanner",
+      "properties": {
+        "devsecops.serviceUrl": {
+          "type": "string",
+          "default": "http://localhost:8000",
+          "description": "URL of the DevSecOps Policy Service"
+        },
+        "devsecops.scanOnSave": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically scan files when saved"
+        },
+        "devsecops.blockThreshold": {
+          "type": "string",
+          "default": "LOW",
+          "enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"],
+          "description": "Minimum severity level to show as errors"
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "devsecops.scanFile",
+        "title": "DevSecOps: Scan Current File"
+      },
+      {
+        "command": "devsecops.fixFile",
+        "title": "DevSecOps: Auto-Fix Current File"
+      }
+    ]
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.80.0"
+  }
+}

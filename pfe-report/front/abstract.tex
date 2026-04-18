@@ -1,0 +1,35 @@
+% ============================================================
+% ABSTRACT (English) + RÉSUMÉ (French)
+% ============================================================
+
+\chapter*{Abstract}
+\addcontentsline{toc}{chapter}{Abstract}
+
+This project presents the design and development of a DevSecOps Policy-as-Code microservice dedicated to the automated security analysis of infrastructure code prior to deployment. Organizations deploying cloud infrastructure face critical security risks, as developers often introduce vulnerabilities such as hardcoded credentials, publicly accessible databases, and unencrypted storage that reach production environments, resulting in costly data breaches.
+
+To address this challenge, we developed a Python-based microservice built with FastAPI that automatically scans infrastructure code written in Terraform, Dockerfile, and Kubernetes YAML formats. The service enforces 100 security policies across 14 categories, covering AWS resources, Docker best practices, Kubernetes security, and general Terraform configurations. It responds in approximately 46 milliseconds on average, making it 3 to 6 times faster than comparable tools such as Checkov and tfsec.
+
+The architecture follows a 4-layer design pattern: an API layer for receiving scan requests, a parser layer supporting three infrastructure formats, a normalizer layer that converts all formats into a unified resource model (reducing code complexity by 67\%), and a policy engine that evaluates violations and renders ALLOW or BLOCK decisions. The service integrates seamlessly with Jenkins CI/CD pipelines and was demonstrated using a complete offline simulation featuring Gitea as a local Git server.
+
+Developed following the Scrum/Agile methodology across four two-week sprints, the project delivers a functional, portable, and educational security tool that provides detailed violation explanations and remediation recommendations to developers, embodying the ``shift-left security'' paradigm.
+
+\vspace{0.5cm}
+\noindent \textbf{Keywords:} DevSecOps, Policy-as-Code, Infrastructure Security, Static Analysis, FastAPI, Terraform, Docker, Kubernetes, CI/CD, Jenkins, Shift-Left Security, Microservice.
+
+\vspace{2cm}
+
+% ============================================================
+
+\chapter*{Résumé}
+\addcontentsline{toc}{chapter}{Résumé}
+
+Ce projet présente la conception et le développement d'un microservice DevSecOps de type Policy-as-Code dédié à l'analyse automatisée de la sécurité du code d'infrastructure avant le déploiement. Les organisations déployant des infrastructures cloud font face à des risques critiques de sécurité, car les développeurs introduisent souvent des vulnérabilités telles que des identifiants codés en dur, des bases de données accessibles publiquement et du stockage non chiffré qui atteignent les environnements de production, entraînant des violations de données coûteuses.
+
+Pour répondre à cette problématique, nous avons développé un microservice basé sur Python avec FastAPI qui analyse automatiquement le code d'infrastructure écrit en Terraform, Dockerfile et YAML Kubernetes. Le service applique 100 politiques de sécurité réparties en 14 catégories, couvrant les ressources AWS, les bonnes pratiques Docker, la sécurité Kubernetes et les configurations générales Terraform. Il répond en environ 46 millisecondes en moyenne, soit 3 à 6 fois plus rapide que des outils comparables tels que Checkov et tfsec.
+
+L'architecture suit un modèle à 4 couches : une couche API pour la réception des requêtes, une couche d'analyse syntaxique supportant trois formats, une couche de normalisation qui convertit tous les formats en un modèle de ressource unifié (réduisant la complexité du code de 67\%), et un moteur de politiques qui évalue les violations et rend des décisions ALLOW ou BLOCK. Le service s'intègre parfaitement aux pipelines CI/CD Jenkins et a été démontré à l'aide d'une simulation hors ligne complète utilisant Gitea comme serveur Git local.
+
+Développé selon la méthodologie Scrum/Agile en quatre sprints de deux semaines, le projet délivre un outil de sécurité fonctionnel, portable et éducatif qui fournit aux développeurs des explications détaillées des violations et des recommandations de remédiation, incarnant le paradigme du « shift-left security ».
+
+\vspace{0.5cm}
+\noindent \textbf{Mots clés :} DevSecOps, Policy-as-Code, Sécurité d'Infrastructure, Analyse Statique, FastAPI, Terraform, Docker, Kubernetes, CI/CD, Jenkins, Shift-Left Security, Microservice.

@@ -1,0 +1,30 @@
+% ============================================================
+% GENERAL INTRODUCTION
+% ============================================================
+
+\chapter*{General Introduction}
+\addcontentsline{toc}{chapter}{General Introduction}
+\markboth{General Introduction}{General Introduction}
+
+In today's rapidly evolving technological landscape, cloud computing has become the backbone of digital transformation across industries. Organizations of all sizes are migrating their infrastructure to the cloud, relying on Infrastructure as Code (IaC) tools such as Terraform, Docker, and Kubernetes to define, deploy, and manage their computing resources. This shift toward codified infrastructure brings unprecedented agility and scalability, but it also introduces a critical challenge: security.
+
+The growing complexity of cloud environments, combined with the speed of modern software delivery, has created fertile ground for security vulnerabilities to slip through unnoticed. Developers, often under pressure to deliver quickly, may inadvertently introduce dangerous misconfigurations—hardcoded credentials, publicly accessible databases, unencrypted storage, or overly permissive firewall rules. When these vulnerabilities reach production, the consequences can be devastating. The Capital One breach of 2019, caused by a misconfigured S3 bucket, exposed over 100 million customer records and resulted in an \$80 million fine. The Uber data breach of 2016, triggered by exposed database credentials, compromised 57 million user records and led to a \$148 million settlement. More recently, Toyota's 2023 credential leak exposed ten years of customer data.
+
+Traditional security practices, which rely on manual code reviews conducted post-development, are no longer adequate. These reviews typically take two to three days, are inconsistent in quality, and cannot scale with the pace of modern CI/CD pipelines that deploy multiple times per day. This disconnect between development speed and security rigor creates a dangerous gap.
+
+This project addresses this gap by proposing a ``shift-left security'' approach: integrating automated security checks directly into the development pipeline, catching vulnerabilities at the moment code is written rather than after it reaches production. Specifically, we have designed and developed a DevSecOps Policy-as-Code microservice that automatically scans infrastructure code (Terraform, Dockerfile, and Kubernetes YAML) for security violations before deployment. The service enforces 100 security policies, responds in approximately 46 milliseconds, and provides detailed educational feedback explaining \textit{why} code is insecure and \textit{how} to fix it.
+
+To structure the development of this project, we adopted the Scrum/Agile methodology, organizing the work into four two-week sprints spanning from February to April 2026. The complete solution was demonstrated using an offline multi-developer simulation with Gitea, Jenkins, and the policy service running entirely on a local machine.
+
+This report documents the full lifecycle of the project and is organized as follows:
+
+\begin{itemize}
+    \item \textbf{Chapter 1: General Project Presentation} — Presents the project context, formulates the problem statement, analyzes existing security scanning tools, proposes our solution, and details the adopted work methodology.
+    \item \textbf{Chapter 2: DevSecOps Fundamentals and Tooling} — Introduces the core DevSecOps concepts: the shift-left security paradigm, Infrastructure as Code, Policy-as-Code, CI/CD, and the design patterns and technologies adopted throughout the project.
+    \item \textbf{Chapter 3: Planning and Architecture} — Captures the functional and non-functional requirements, defines the system actors, presents the product backlog and UML diagrams, describes the 4-layer architecture, and outlines the development tools.
+    \item \textbf{Chapter 4: Sprint 1 — Core Microservice Foundation} — Documents the first sprint: FastAPI skeleton, three parsers (Terraform, Dockerfile, Kubernetes), the normalizer innovation, and the initial 12 core security policies.
+    \item \textbf{Chapter 5: Sprint 2 — Policy Engine and 100 Security Rules} — Details the expansion from 12 to 100 policies across 14 categories, the configurable severity threshold system, and the diff-only scanning feature.
+    \item \textbf{Chapter 6: Sprint 3 — Dashboard, Reports and Scan History} — Presents the SQLite scan history, real-time metrics dashboard, HTML security report generator, and metrics aggregation endpoint.
+    \item \textbf{Chapter 7: Sprint 4 — CI/CD Integration, Docker and Demo} — Covers Docker containerization, Jenkins pipeline integration, Gitea setup, and the Alice vs.\ Bob multi-developer demonstration.
+    \item \textbf{General Conclusion} — Synthesizes the achievements across the four sprints, discusses challenges overcome, and presents future evolution perspectives.
+\end{itemize}

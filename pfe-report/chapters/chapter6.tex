@@ -1,0 +1,348 @@
+% ============================================================
+% CHAPTER 6: Sprint 3 — Dashboard, Reports and Scan History
+% (Following Tarek's sprint chapter pattern)
+% ============================================================
+
+\chapter{Sprint 3: Dashboard, Reports and Scan History}
+
+\section{Introduction}
+
+This chapter covers the third sprint (March 2--13, 2026), which focused on making the service's output visible, accessible, and historically traceable. During this iteration, we implemented the SQLite-based scan history system, the real-time metrics dashboard served at the root endpoint, the HTML security report generator, and the metrics aggregation endpoint. By the end of this sprint, every scan was persisted, every violation was visualized, and DevOps engineers had a comprehensive overview of their infrastructure's security posture.
+
+% ============================================================
+\section{Sprint 3 Objectives}
+% ============================================================
+
+The objectives for Sprint 3 were:
+
+\begin{enumerate}
+    \item Implement the SQLite scan history system with persistent storage across service restarts.
+    \item Develop the \texttt{GET /metrics} endpoint providing aggregated scan statistics.
+    \item Build the real-time dashboard (HTML/CSS/JavaScript) served at \texttt{GET /}.
+    \item Create the HTML security report generator accessible via \texttt{GET /report/\{filename\}}.
+    \item Implement the \texttt{GET /history} endpoint for retrieving past scan records.
+\end{enumerate}
+
+% ============================================================
+\section{Sprint 3 Backlog}
+% ============================================================
+
+\begin{table}[H]
+\centering
+\caption{Sprint 3 — Product Backlog}
+\label{tab:sprint3-backlog}
+\begin{tabular}{|p{0.8cm}|p{8.5cm}|c|c|}
+\hline
+\textbf{ID} & \textbf{User Story} & \textbf{Priority} & \textbf{Status} \\
+\hline
+US-12 & As a DevOps engineer, I can view a real-time dashboard with scan statistics, top violations, and block rates. & Medium & Done \\
+\hline
+US-13 & As a DevOps engineer, I can generate HTML security reports for each scan. & Medium & Done \\
+\hline
+US-14 & As a DevOps engineer, I can view the history of all past scans with timestamps and results. & Medium & Done \\
+\hline
+US-15 & As a DevOps engineer, I can access metrics including total requests, blocks, allows, and top violations. & Medium & Done \\
+\hline
+US-16 & As an administrator, I can verify scan data persists across service restarts. & Low & Done \\
+\hline
+\end{tabular}
+\end{table}
+
+% ============================================================
+\section{Use Case Refinement}
+% ============================================================
+
+\subsection{Refined Use Case: View Dashboard and Reports}
+
+% TODO: INSERT USE CASE DIAGRAM FOR SPRINT 3
+% \begin{figure}[H]
+%     \centering
+%     \includegraphics[width=0.85\textwidth]{figures/sprint3-usecase.png}
+%     \caption{Sprint 3 — Refined use case: dashboard, reports and history}
+%     \label{fig:sprint3-usecase}
+% \end{figure}
+
+\textit{[Figure: Sprint 3 Use Case Diagram — create in draw.io]}
+
+\vspace{0.3cm}
+
+\begin{table}[H]
+\centering
+\caption{Textual description — View real-time dashboard}
+\label{tab:sprint3-usecase-text}
+\begin{tabular}{|p{3.5cm}|p{9.5cm}|}
+\hline
+\textbf{Use Case} & View Real-Time Security Dashboard \\
+\hline
+\textbf{Actor} & DevOps Engineer \\
+\hline
+\textbf{Precondition} & The service is running and at least one scan has been performed. \\
+\hline
+\textbf{Postcondition} & The dashboard displays current metrics, top violations, and scan history. \\
+\hline
+\textbf{Nominal Scenario} &
+\begin{enumerate}[nosep]
+    \item The actor navigates to the service root URL (\texttt{http://localhost:8000/}).
+    \item The service returns the \texttt{dashboard.html} file.
+    \item JavaScript in the dashboard fetches \texttt{GET /metrics} and \texttt{GET /history}.
+    \item The dashboard renders statistics cards (total scans, blocked, allowed, block rate).
+    \item A ring chart visualizes the block/allow ratio.
+    \item The top violations ranking is displayed.
+    \item The scan history table shows recent scans with timestamps and results.
+\end{enumerate} \\
+\hline
+\textbf{Alternative Scenario} &
+\begin{itemize}[nosep]
+    \item If no scans have been performed, the dashboard shows zeroed statistics and an empty history table.
+\end{itemize} \\
+\hline
+\end{tabular}
+\end{table}
+
+% ============================================================
+\section{Sequence Diagram}
+% ============================================================
+
+% TODO: INSERT SEQUENCE DIAGRAM FOR SPRINT 3
+% Focus on dashboard data fetching:
+% Browser → GET / → dashboard.html → JavaScript → GET /metrics → stats
+%                                                → GET /history → scan records
+% \begin{figure}[H]
+%     \centering
+%     \includegraphics[width=\textwidth]{figures/sprint3-sequence.png}
+%     \caption{Sequence diagram — dashboard data loading flow}
+%     \label{fig:sprint3-sequence}
+% \end{figure}
+
+\textit{[Figure: Sprint 3 Sequence Diagram — create in draw.io]}
+
+% ============================================================
+\section{Realization}
+% ============================================================
+
+\subsection{SQLite Scan History System}
+
+Every scan performed through the \texttt{POST /analyze} endpoint is automatically persisted to an SQLite database (\texttt{scans.db}). The database schema captures all relevant metadata:
+
+\begin{lstlisting}[language=SQL, caption={SQLite schema for scan history}, label={lst:sqlite-schema}]
+CREATE TABLE IF NOT EXISTS scan_history (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    timestamp       TEXT NOT NULL,
+    filename        TEXT,
+    code_type       TEXT NOT NULL,
+    decision        TEXT NOT NULL,     -- 'ALLOW' or 'BLOCK'
+    violations_count INTEGER NOT NULL,
+    violations_json TEXT NOT NULL,     -- Full violations as JSON
+    scan_time_ms    INTEGER NOT NULL,
+    block_threshold TEXT NOT NULL DEFAULT 'LOW'
+);
+\end{lstlisting}
+
+Three Python functions in \texttt{api/history.py} provide the persistence interface:
+
+\begin{itemize}
+    \item \texttt{save\_scan()}: Inserts a new scan record after every analysis.
+    \item \texttt{get\_history(limit)}: Retrieves the most recent scans, ordered by ID descending.
+    \item \texttt{get\_stats()}: Returns aggregated statistics using SQL aggregation functions.
+\end{itemize}
+
+\begin{lstlisting}[language=Python, caption={Statistics aggregation query}, label={lst:stats-query}]
+def get_stats() -> Dict[str, Any]:
+    conn = sqlite3.connect(DB_PATH)
+    row = conn.execute('''
+        SELECT
+            COUNT(*)                                          AS total,
+            SUM(CASE WHEN decision="BLOCK" THEN 1 ELSE 0 END) AS blocks,
+            SUM(CASE WHEN decision="ALLOW" THEN 1 ELSE 0 END) AS allows
+        FROM scan_history
+    ''').fetchone()
+    total  = row[0] or 0
+    blocks = row[1] or 0
+    allows = row[2] or 0
+    return {
+        'total_requests':    total,
+        'total_blocks':      blocks,
+        'total_allows':      allows,
+        'block_rate_percent': round(blocks/total*100 if total else 0, 1),
+    }
+\end{lstlisting}
+
+\noindent SQLite was chosen over alternatives (PostgreSQL, Redis) because it requires \textbf{zero configuration}: no server to install, no connection strings to manage, and the database file persists across service restarts. This aligns with the project's principle of zero external dependencies.
+
+\subsection{Real-Time Dashboard}
+
+The dashboard is a single-page HTML/CSS/JavaScript application served by FastAPI as a static file at the root endpoint (\texttt{GET /}). It features a dark-themed, professional design with several key components:
+
+\begin{enumerate}
+    \item \textbf{Statistics Cards}: Four cards showing total scans, blocked scans, allowed scans, and block rate percentage.
+    \item \textbf{Ring Chart}: A CSS-based circular visualization showing the block/allow ratio.
+    \item \textbf{Top Violations}: A ranked list of the most frequently triggered security rules.
+    \item \textbf{Request Distribution}: Breakdown of scans by code type (Terraform, Dockerfile, Kubernetes).
+    \item \textbf{Scan History Table}: A chronological table of recent scans with timestamps, filenames, decisions, and violation counts.
+\end{enumerate}
+
+The dashboard uses vanilla JavaScript with \texttt{fetch()} API calls to retrieve data from the \texttt{/metrics} and \texttt{/history} endpoints. No external JavaScript frameworks or libraries are used, keeping the dashboard lightweight and self-contained.
+
+% TODO: INSERT SCREENSHOT OF DASHBOARD
+% Take a screenshot of the full dashboard at localhost:8000
+% \begin{figure}[H]
+%     \centering
+%     \includegraphics[width=0.95\textwidth]{figures/sprint3-dashboard.png}
+%     \caption{Sprint 3 — Real-time security dashboard}
+%     \label{fig:sprint3-dashboard}
+% \end{figure}
+
+\textit{[Screenshot: Dashboard at localhost:8000]}
+
+\subsection{HTML Security Report Generator}
+
+The report generator produces detailed, printable HTML security reports for each scan. Accessible via \texttt{GET /report/\{filename\}}, each report features:
+
+\begin{itemize}
+    \item A dark-themed professional design using the JetBrains Mono font.
+    \item A prominent decision banner (\textcolor{red}{BLOCK} in red or \textcolor{green!50!black}{ALLOW} in green).
+    \item Four statistics cards showing violation counts by severity level (CRITICAL, HIGH, MEDIUM, LOW).
+    \item Individual violation cards with color-coded severity badges, rule IDs, line numbers, messages, and fix recommendations.
+    \item A footer with generation timestamp, total violations, and scan duration.
+\end{itemize}
+
+\begin{lstlisting}[language=Python, caption={Report generator — violation card rendering}, label={lst:report-violation}]
+SEV_COLOR = {
+    'CRITICAL': '#ff2d55',
+    'HIGH':     '#ff6b35',
+    'MEDIUM':   '#ffd166',
+    'LOW':      '#06d6a0',
+}
+
+# For each violation:
+violations_html += f'''
+<div class="violation"
+     style="border-left:3px solid {color};
+            background:{bg}">
+    <div class="v-header">
+        <span class="v-rule">{v.get("rule","")}</span>
+        <span class="v-sev" style="color:{color}">{sev}</span>
+        <span class="v-line">{line}</span>
+    </div>
+    <div class="v-msg">{v.get("message","")}</div>
+    <div class="v-rec">
+        <strong>Fix:</strong> {v.get("recommendation","")}
+    </div>
+</div>'''
+\end{lstlisting}
+
+% TODO: INSERT SCREENSHOT OF HTML REPORT
+% Take a screenshot of the report at localhost:8000/report/main.tf
+% \begin{figure}[H]
+%     \centering
+%     \includegraphics[width=0.95\textwidth]{figures/sprint3-report.png}
+%     \caption{Sprint 3 — HTML security report with violation details and recommendations}
+%     \label{fig:sprint3-report}
+% \end{figure}
+
+\textit{[Screenshot: HTML Security Report]}
+
+\subsection{Metrics Endpoint}
+
+The \texttt{GET /metrics} endpoint provides a comprehensive JSON summary of the service's operational state:
+
+\begin{lstlisting}[language=Python, caption={Metrics endpoint combining stats and analytics}, label={lst:metrics}]
+@router.get("/metrics")
+async def metrics():
+    from api.metrics import get_metrics
+    stats = get_stats()            # SQL aggregation
+    metrics_data = get_metrics()   # In-memory analytics
+    stats['top_violations'] = metrics_data.get('top_violations', [])
+    stats['requests_by_type'] = metrics_data.get('requests_by_type', {})
+    return stats
+\end{lstlisting}
+
+The response includes:
+\begin{itemize}
+    \item \texttt{total\_requests}: Total number of scans performed.
+    \item \texttt{total\_blocks}: Number of scans resulting in BLOCK.
+    \item \texttt{total\_allows}: Number of scans resulting in ALLOW.
+    \item \texttt{block\_rate\_percent}: Percentage of scans blocked.
+    \item \texttt{top\_violations}: Most frequently triggered policy rules.
+    \item \texttt{requests\_by\_type}: Distribution of scans by code type.
+\end{itemize}
+
+% ============================================================
+\section{Technologies Used}
+% ============================================================
+
+\vspace{0.5cm}
+\begin{tabular}{| m{2.5cm} | m{10cm} |}
+\hline
+
+\textbf{SQLite} &
+Serverless, zero-configuration relational database. The \texttt{scans.db} file is stored alongside the service and persists across restarts without requiring any external database server.
+\\
+\hline
+
+\textbf{HTML5 / CSS3 / JavaScript} &
+The dashboard and HTML reports are built with vanilla web technologies. No external frameworks (React, Vue) are used, keeping the deployment footprint minimal.
+\\
+\hline
+
+\textbf{JetBrains Mono} &
+Monospace font used in the HTML report for a professional, developer-oriented aesthetic.
+\\
+\hline
+
+\textbf{FastAPI StaticFiles} &
+FastAPI's \texttt{HTMLResponse} and \texttt{FileResponse} capabilities serve the dashboard.html file and generated reports directly from the API server.
+\\
+\hline
+
+\end{tabular}
+
+% ============================================================
+\section{Sprint 3 Interfaces}
+% ============================================================
+
+\subsection{Dashboard Overview}
+
+% TODO: INSERT SCREENSHOT OF FULL DASHBOARD with data
+% \begin{figure}[H]
+%     \centering
+%     \includegraphics[width=0.95\textwidth]{figures/sprint3-dashboard-full.png}
+%     \caption{Sprint 3 — Dashboard after multiple scans showing statistics, chart, and history}
+%     \label{fig:sprint3-dashboard-full}
+% \end{figure}
+
+\textit{[Screenshot: Dashboard with data after multiple scans]}
+
+\subsection{Scan History Table}
+
+% TODO: INSERT SCREENSHOT OF HISTORY TABLE
+% \begin{figure}[H]
+%     \centering
+%     \includegraphics[width=0.9\textwidth]{figures/sprint3-history.png}
+%     \caption{Sprint 3 — Scan history table showing timestamped records}
+%     \label{fig:sprint3-history}
+% \end{figure}
+
+\textit{[Screenshot: Scan history table at /history]}
+
+\subsection{Security Report with Violations}
+
+% TODO: INSERT SCREENSHOT OF REPORT WITH BLOCK DECISION
+% \begin{figure}[H]
+%     \centering
+%     \includegraphics[width=0.9\textwidth]{figures/sprint3-report-block.png}
+%     \caption{Sprint 3 — Security report showing BLOCK decision with detailed violation cards}
+%     \label{fig:sprint3-report-block}
+% \end{figure}
+
+\textit{[Screenshot: HTML report showing BLOCK decision with violation cards]}
+
+% ============================================================
+\section{Conclusion}
+% ============================================================
+
+Sprint 3 transformed the service from a headless API into a fully observable system. The SQLite-based scan history provides persistent traceability of every scan performed, while the metrics endpoint enables programmatic access to aggregated statistics. The real-time dashboard gives DevOps engineers an at-a-glance view of their infrastructure's security posture, and the HTML security reports provide detailed, printable documentation of each scan's findings.
+
+The design decisions made during this sprint—SQLite over PostgreSQL, vanilla JavaScript over framework-based UI, single-file dashboard over a separate frontend application—all reflect the project's core principle: maximum functionality with minimum external dependencies. The entire visualization layer adds zero deployment overhead: no additional containers, no npm builds, no database servers.
+
+The following chapter will integrate the service into a complete CI/CD pipeline with Jenkins and Gitea, and demonstrate the full workflow with the Alice and Bob scenario.

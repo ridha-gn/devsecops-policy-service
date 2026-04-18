@@ -1,0 +1,7 @@
+gitea
+data/
+custom/
+__pycache__/
+*.pyc
+venv/
+*.db

@@ -1,0 +1,442 @@
+% ============================================================
+% CHAPTER 4: Sprint 1 — Core Microservice Foundation
+% (Following Tarek's sprint chapter pattern exactly)
+% ============================================================
+
+\chapter{Sprint 1: Core Microservice Foundation}
+
+\section{Introduction}
+
+This chapter covers the first sprint of the project, which focused on establishing the core foundation of the DevSecOps Policy-as-Code microservice. During this two-week iteration (February 3--14, 2026), we set up the FastAPI service skeleton, designed the 4-layer architecture, implemented the three parsers (Terraform, Dockerfile, Kubernetes), developed the normalizer component, and created the initial set of 12 core security policies. This sprint transformed the project from a concept into a working prototype capable of parsing, normalizing, and evaluating infrastructure code.
+
+% ============================================================
+\section{Sprint 1 Objectives}
+% ============================================================
+
+The objectives for Sprint 1 were defined during the sprint planning session:
+
+\begin{enumerate}
+    \item Set up the Python 3.10 development environment with FastAPI.
+    \item Create the basic API with the \texttt{POST /analyze} endpoint.
+    \item Implement the three parsers: TerraformParser, DockerfileParser, and KubernetesParser.
+    \item Design and implement the Normalizer that converts parsed data into a unified Resource model.
+    \item Create the initial set of 12 core security policies.
+    \item Configure the project repository and development workflow.
+\end{enumerate}
+
+% ============================================================
+\section{Sprint 1 Backlog}
+% ============================================================
+
+\begin{table}[H]
+\centering
+\caption{Sprint 1 — Product Backlog}
+\label{tab:sprint1-backlog}
+\begin{tabular}{|p{0.8cm}|p{8.5cm}|c|c|}
+\hline
+\textbf{ID} & \textbf{User Story} & \textbf{Priority} & \textbf{Status} \\
+\hline
+US-01 & As a DevOps engineer, I can submit Terraform code for analysis via the REST API. & High & Done \\
+\hline
+US-02 & As a DevOps engineer, I can submit Dockerfile content for security scanning. & High & Done \\
+\hline
+US-03 & As a DevOps engineer, I can submit Kubernetes YAML manifests for policy evaluation. & High & Done \\
+\hline
+US-04 & As a developer, I receive consistent violation reporting regardless of input format. & High & Done \\
+\hline
+US-05 & As a security engineer, I can enforce 12 core security policies covering critical risks. & High & Done \\
+\hline
+US-06 & As an administrator, I can check the service health via the health endpoint. & Low & Done \\
+\hline
+\end{tabular}
+\end{table}
+
+% ============================================================
+\section{Use Case Refinement}
+% ============================================================
+
+\subsection{Refined Use Case: Submit Code for Analysis}
+
+% TODO: INSERT USE CASE DIAGRAM FOR SPRINT 1
+% Show: DevOps Engineer → POST /analyze → System → Parse → Normalize → Evaluate → Return
+% \begin{figure}[H]
+%     \centering
+%     \includegraphics[width=0.85\textwidth]{figures/sprint1-usecase.png}
+%     \caption{Sprint 1 — Refined use case: code analysis}
+%     \label{fig:sprint1-usecase}
+% \end{figure}
+
+\textit{[Figure: Sprint 1 Use Case Diagram — create in draw.io]}
+
+\vspace{0.3cm}
+
+\begin{table}[H]
+\centering
+\caption{Textual description — Submit code for analysis}
+\label{tab:sprint1-usecase-text}
+\begin{tabular}{|p{3.5cm}|p{9.5cm}|}
+\hline
+\textbf{Use Case} & Submit Infrastructure Code for Analysis \\
+\hline
+\textbf{Actor} & DevOps Engineer / Jenkins \\
+\hline
+\textbf{Precondition} & The service is running and accessible at the configured URL. \\
+\hline
+\textbf{Postcondition} & The system returns a JSON response containing the decision (ALLOW/BLOCK), a list of violations, and the scan duration. \\
+\hline
+\textbf{Nominal Scenario} &
+\begin{enumerate}[nosep]
+    \item The actor sends a \texttt{POST /analyze} request with \texttt{code\_type}, \texttt{content}, and optional \texttt{block\_threshold}.
+    \item The API layer validates the request via Pydantic schemas.
+    \item The appropriate parser is selected via the factory pattern.
+    \item The parser converts the raw code into a structured dictionary.
+    \item The normalizer transforms the parsed data into a list of \texttt{Resource} objects.
+    \item All enabled policies run their \texttt{check()} method against the normalized resources.
+    \item The engine aggregates violations, applies the severity threshold, and produces a decision.
+    \item The JSON response is returned with the full analysis results.
+\end{enumerate} \\
+\hline
+\textbf{Alternative Scenario} &
+\begin{itemize}[nosep]
+    \item If the \texttt{code\_type} is unsupported, the service returns HTTP 500 with an error message.
+    \item If the code content is malformed, the parser raises a \texttt{ValueError} and the API returns an error response.
+\end{itemize} \\
+\hline
+\end{tabular}
+\end{table}
+
+% ============================================================
+\section{Sequence Diagram}
+% ============================================================
+
+The following sequence diagram illustrates the complete flow of a code analysis request through the four architectural layers.
+
+% TODO: INSERT SEQUENCE DIAGRAM FOR SPRINT 1
+% Participants: Client → FastAPI (API Layer) → Parser Layer → Normalizer → Policy Engine
+% Flow:
+% 1. Client → FastAPI: POST /analyze {code_type, content}
+% 2. FastAPI → Parser: get_parser(code_type)
+% 3. FastAPI → Parser: parse(content)
+% 4. Parser → FastAPI: parsed_data
+% 5. FastAPI → Normalizer: normalize(code_type, parsed_data)
+% 6. Normalizer → FastAPI: NormalizedCode (resources[])
+% 7. FastAPI → PolicyEngine: analyze(NormalizedCode)
+% 8. loop [for each policy]: PolicyEngine → Policy: check(NormalizedCode) → violations
+% 9. PolicyEngine → FastAPI: PolicyDecision (allow, violations, summary)
+% 10. FastAPI → Client: JSON {decision, violations, scan_time_ms}
+
+% \begin{figure}[H]
+%     \centering
+%     \includegraphics[width=\textwidth]{figures/sprint1-sequence.png}
+%     \caption{Sequence diagram — code analysis request flow through the 4 layers}
+%     \label{fig:sprint1-sequence}
+% \end{figure}
+
+\textit{[Figure: Sprint 1 Sequence Diagram — create in draw.io]}
+
+% ============================================================
+\section{Realization}
+% ============================================================
+
+\subsection{Project Structure}
+
+The project follows a clean package-based structure reflecting the 4-layer architecture:
+
+\begin{lstlisting}[language=bash, caption={Project directory structure}, label={lst:project-structure}]
+devsecops-policy-service/
+  main.py                 # Application entry point
+  requirements.txt        # Python dependencies
+  api/
+    __init__.py
+    routes.py             # FastAPI endpoint definitions
+    schemas.py            # Pydantic request/response models
+  engine/
+    __init__.py
+    parser.py             # TerraformParser, DockerfileParser, KubernetesParser
+    normalizer.py         # Format-agnostic normalizer
+    policy_engine.py      # PolicyEngine orchestrator
+    policies/
+      __init__.py
+      security_policies.py  # 12 core policies (Sprint 1)
+  models/
+    __init__.py
+    code_structure.py     # Resource, NormalizedCode dataclasses
+    decision.py           # PolicyDecision, PolicyViolation models
+\end{lstlisting}
+
+\subsection{API Layer Implementation}
+
+The API layer was built with FastAPI, providing automatic data validation through Pydantic schemas. The core data models define the contract between the client and the service:
+
+\begin{lstlisting}[language=Python, caption={Pydantic schemas — AnalyzeRequest and AnalyzeResponse}, label={lst:schemas}]
+class AnalyzeRequest(BaseModel):
+    code_type: CodeType     # terraform | dockerfile | yaml
+    content: str            # Raw infrastructure code
+    filename: Optional[str] # For reporting
+    block_threshold: BlockThreshold  # LOW | MEDIUM | HIGH | CRITICAL
+    diff_only: Optional[str]  # Unified diff for filtering
+
+class AnalyzeResponse(BaseModel):
+    decision: Decision      # ALLOW | BLOCK
+    violations: List[Violation]
+    explanation: str
+    scan_time_ms: Optional[int]
+    filename: Optional[str]
+    report_url: Optional[str]
+\end{lstlisting}
+
+\subsection{Parser Layer Implementation}
+
+Three specialized parsers handle the three supported IaC formats. Each parser converts raw code strings into structured Python dictionaries.
+
+\vspace{0.3cm}
+\noindent\textbf{TerraformParser} uses the \texttt{python-hcl2} library to parse HashiCorp Configuration Language:
+
+\begin{lstlisting}[language=Python, caption={TerraformParser — parsing HCL and extracting resources}, label={lst:tf-parser}]
+class TerraformParser:
+    def parse(self, content: str) -> Dict[str, Any]:
+        parsed = hcl2.loads(content)
+        return parsed
+
+    def extract_resources(self, parsed_data: Dict) -> list:
+        resources = []
+        line_number = 1
+        for resource_block in parsed_data.get("resource", []):
+            for resource_type, instances in resource_block.items():
+                for resource_name, attributes in instances.items():
+                    resources.append({
+                        "type": resource_type,
+                        "name": resource_name,
+                        "attributes": attributes,
+                        "line": line_number
+                    })
+                    line_number += 10
+        return resources
+\end{lstlisting}
+
+\noindent\textbf{DockerfileParser} uses custom regex-based parsing to process each instruction line by line:
+
+\begin{lstlisting}[language=Python, caption={DockerfileParser — line-by-line instruction extraction}, label={lst:docker-parser}]
+class DockerfileParser:
+    def parse(self, content: str) -> Dict[str, Any]:
+        instructions = []
+        line_number = 0
+        for line in content.split('\n'):
+            line_number += 1
+            line = line.strip()
+            if not line or line.startswith('#'):
+                continue
+            parts = line.split(maxsplit=1)
+            if len(parts) >= 1:
+                instructions.append({
+                    "instruction": parts[0].upper(),
+                    "args": parts[1] if len(parts) > 1 else "",
+                    "line": line_number
+                })
+        return {"instructions": instructions}
+\end{lstlisting}
+
+\noindent\textbf{KubernetesParser} uses \texttt{PyYAML} to parse YAML manifests and extract container specifications:
+
+\begin{lstlisting}[language=Python, caption={KubernetesParser — YAML parsing and container extraction}, label={lst:k8s-parser}]
+class KubernetesParser:
+    def parse(self, content: str) -> Dict[str, Any]:
+        parsed = yaml.safe_load(content)
+        if parsed is None:
+            raise ValueError("Empty YAML content")
+        return parsed
+
+    def extract_containers(self, parsed_data: Dict) -> list:
+        containers = []
+        pods = self.extract_pods(parsed_data)
+        for pod in pods:
+            pod_spec = pod.get("spec", {})
+            containers.extend(pod_spec.get("containers", []))
+        return containers
+\end{lstlisting}
+
+\subsection{Normalizer — The Key Architectural Innovation}
+
+The Normalizer is the most critical component of the architecture. It converts the heterogeneous output of the three parsers into a unified \texttt{Resource} model, enabling policies to be written once and applied to any format.
+
+\begin{lstlisting}[language=Python, caption={Unified Resource dataclass}, label={lst:resource-model}]
+@dataclass
+class Resource:
+    resource_type: str        # e.g., "aws_s3_bucket", "docker_from"
+    resource_name: str        # e.g., "my-bucket", "FROM"
+    attributes: Dict[str, Any]  # Format-specific attributes
+    line_number: Optional[int]  # Source line for error reporting
+\end{lstlisting}
+
+The Normalizer class provides format-specific methods that all produce the same output type:
+
+\begin{lstlisting}[language=Python, caption={Normalizer — format-agnostic conversion}, label={lst:normalizer}]
+class Normalizer:
+    def normalize(self, code_type, parsed_data, 
+                  extracted_resources=None, parser=None):
+        if code_type == "terraform":
+            return self.normalize_terraform(parsed_data, extracted_resources)
+        elif code_type == "dockerfile":
+            return self.normalize_dockerfile(parsed_data)
+        elif code_type == "yaml":
+            return self.normalize_kubernetes(parsed_data, parser)
+\end{lstlisting}
+
+\noindent This design decision reduced code complexity by 67\%:
+\begin{itemize}
+    \item \textbf{Without normalizer}: 100 policies $\times$ 3 formats = 300 implementations
+    \item \textbf{With normalizer}: 100 policies $\times$ 1 unified format = 100 implementations
+\end{itemize}
+
+\subsection{Initial 12 Core Security Policies}
+
+The first sprint delivered 12 foundational security policies, selected based on analysis of real-world cloud security breaches:
+
+\begin{table}[H]
+\centering
+\caption{Sprint 1 — 12 core security policies}
+\label{tab:sprint1-policies}
+\small
+\begin{tabular}{|c|p{4cm}|c|p{5cm}|}
+\hline
+\textbf{\#} & \textbf{Rule ID} & \textbf{Severity} & \textbf{Description} \\
+\hline
+1 & PUBLIC\_S3\_BUCKET & HIGH & S3 buckets must not be publicly accessible \\
+\hline
+2 & HARDCODED\_SECRET & CRITICAL & No hardcoded credentials in code \\
+\hline
+3 & UNENCRYPTED\_STORAGE & HIGH & Storage must be encrypted at rest \\
+\hline
+4 & DOCKER\_ROOT\_USER & MEDIUM & Dockerfiles must specify non-root USER \\
+\hline
+5 & MISSING\_REQUIRED\_TAGS & LOW & Resources must have compliance tags \\
+\hline
+6 & INSECURE\_SECURITY\_GROUP & HIGH & No unrestricted 0.0.0.0/0 ingress \\
+\hline
+7 & MISSING\_LOGGING & MEDIUM & S3 access logging must be enabled \\
+\hline
+8 & PUBLIC\_DATABASE & CRITICAL & RDS must not be publicly accessible \\
+\hline
+9 & EXPENSIVE\_INSTANCE\_TYPE & MEDIUM & Flag costly EC2 instance types \\
+\hline
+10 & PRIVILEGED\_CONTAINER & HIGH & K8s containers must not run privileged \\
+\hline
+11 & HOST\_NETWORK\_ENABLED & MEDIUM & K8s pods must not use host network \\
+\hline
+12 & MISSING\_RESOURCE\_LIMITS & LOW & K8s containers must define resource limits \\
+\hline
+\end{tabular}
+\end{table}
+
+Each policy inherits from the \texttt{BasePolicy} abstract class and implements a single \texttt{check()} method. Here is an example of the \texttt{PublicS3BucketPolicy}:
+
+\begin{lstlisting}[language=Python, caption={PublicS3BucketPolicy — example policy implementation}, label={lst:s3-policy}]
+class PublicS3BucketPolicy(BasePolicy):
+    def __init__(self):
+        super().__init__(
+            rule_id="PUBLIC_S3_BUCKET",
+            severity=PolicySeverity.HIGH,
+            description="S3 buckets should not be publicly accessible"
+        )
+
+    def check(self, code: NormalizedCode) -> List[PolicyViolation]:
+        violations = []
+        s3_buckets = code.find_resources_by_type("aws_s3_bucket")
+        for bucket in s3_buckets:
+            acl = bucket.get_attribute("acl", "private")
+            if acl in ["public-read", "public-read-write"]:
+                violations.append(PolicyViolation(
+                    rule_id=self.rule_id,
+                    severity=self.severity,
+                    message=f"S3 bucket '{bucket.resource_name}' has "
+                            f"public ACL: {acl}",
+                    line_number=bucket.line_number,
+                    recommendation="Change ACL to 'private' and use "
+                                   "bucket policies for controlled access"
+                ))
+        return violations
+\end{lstlisting}
+
+% ============================================================
+\section{Technologies Used}
+% ============================================================
+
+The following technologies were used during Sprint 1:
+
+\vspace{0.5cm}
+\begin{tabular}{| m{2.5cm} | m{10cm} |}
+\hline
+
+% TODO: Add Python logo in figures/python.png
+\textbf{Python 3.10} &
+Python~\cite{python} served as the primary development language. Its support for abstract classes, dataclasses, and type hints aligned naturally with the Template Method and Strategy patterns used in the architecture.
+\\
+\hline
+
+% TODO: Add FastAPI logo in figures/fastapi.png
+\textbf{FastAPI 0.104} &
+FastAPI~\cite{fastapi} provided the API layer with automatic request validation (Pydantic), interactive documentation (Swagger UI), and high-performance async request handling.
+\\
+\hline
+
+% TODO: Add python-hcl2 reference
+\textbf{python-hcl2 4.3} &
+The python-hcl2 library parsed Terraform's HCL syntax into Python dictionaries, avoiding the complexity of building a custom HCL parser from scratch.
+\\
+\hline
+
+\textbf{PyYAML 6.0} &
+PyYAML parsed Kubernetes YAML manifests using the \texttt{safe\_load()} function, providing structured access to pod specifications and security contexts.
+\\
+\hline
+
+\textbf{Git / GitHub} &
+GitHub~\cite{github} hosted the project repository (\texttt{ridha-gn/devsecops-policy-service}), providing version control and change tracking.
+\\
+\hline
+
+\end{tabular}
+
+% ============================================================
+\section{Sprint 1 Interfaces}
+% ============================================================
+
+\subsection{FastAPI Swagger Documentation}
+
+The API is automatically documented through FastAPI's built-in Swagger UI, accessible at \texttt{/docs}. This interactive interface allows testing all endpoints directly from the browser.
+
+% TODO: INSERT SCREENSHOT OF SWAGGER UI
+% Take a screenshot of localhost:8000/docs showing the POST /analyze endpoint
+% \begin{figure}[H]
+%     \centering
+%     \includegraphics[width=0.9\textwidth]{figures/sprint1-swagger.png}
+%     \caption{Sprint 1 — FastAPI Swagger UI showing available endpoints}
+%     \label{fig:sprint1-swagger}
+% \end{figure}
+
+\textit{[Screenshot: FastAPI Swagger UI at /docs]}
+
+\subsection{API Response Example}
+
+The following shows a typical API response when scanning insecure Terraform code:
+
+% TODO: INSERT SCREENSHOT OF API RESPONSE
+% Show the JSON response from POST /analyze with violations
+% \begin{figure}[H]
+%     \centering
+%     \includegraphics[width=0.9\textwidth]{figures/sprint1-response.png}
+%     \caption{Sprint 1 — API response showing BLOCK decision with violations}
+%     \label{fig:sprint1-response}
+% \end{figure}
+
+\textit{[Screenshot: API JSON response with violations]}
+
+% ============================================================
+\section{Conclusion}
+% ============================================================
+
+Sprint 1 successfully established the core foundation of the DevSecOps Policy-as-Code microservice. The 4-layer architecture (API, Parser, Normalizer, Policy Engine) was implemented and validated with a working prototype. The three parsers handle Terraform HCL, Dockerfile, and Kubernetes YAML formats, and the normalizer converts all three into a unified Resource model—the key architectural innovation that enables format-agnostic policy evaluation.
+
+The initial set of 12 core security policies demonstrates the service's ability to detect real-world security risks: public S3 buckets, hardcoded secrets, unencrypted storage, root Docker containers, unrestricted security groups, and privileged Kubernetes containers. The service responds in approximately 46 milliseconds, validating the performance target defined in the non-functional requirements.
+
+The following chapter will build upon this foundation by expanding the policy set from 12 to 100 rules and implementing the configurable severity threshold system.
