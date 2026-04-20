@@ -1553,6 +1553,11 @@ async function runScan() {
       })
     });
 
+    if (!resp.ok) {
+      const errData = await resp.json().catch(() => ({}));
+      throw new Error(errData.detail || `Server error: ${resp.status}`);
+    }
+
     const data = await resp.json();
     const elapsed = Date.now() - startTime;
 
@@ -1643,6 +1648,10 @@ async function runAutoFix() {
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ content, code_type: codeType })
     });
+    if (!resp.ok) {
+      const errData = await resp.json().catch(() => ({}));
+      throw new Error(errData.detail || `Server error: ${resp.status}`);
+    }
     const data = await resp.json();
 
     if (data.total_fixes === 0) {

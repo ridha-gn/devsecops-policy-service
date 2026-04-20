@@ -1,0 +1,116 @@
+{
+  "title": "DevSecOps Policy Engine Overview",
+  "description": "Real-time metrics for infrastructure as code security scans.",
+  "refresh": "10s",
+  "schemaVersion": 30,
+  "timezone": "browser",
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Total Scans",
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "devsecops_scans_total",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "fixed", "fixedColor": "super-light-blue" }
+        }
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Deployments Blocked",
+      "gridPos": { "h": 6, "w": 6, "x": 6, "y": 0 },
+      "targets": [
+        {
+          "expr": "devsecops_blocks_total",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "fixed", "fixedColor": "red" }
+        }
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Deployments Allowed",
+      "gridPos": { "h": 6, "w": 6, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "expr": "devsecops_allows_total",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "fixed", "fixedColor": "green" }
+        }
+      }
+    },
+    {
+      "type": "gauge",
+      "title": "Block Rate Percentage",
+      "gridPos": { "h": 6, "w": 6, "x": 18, "y": 0 },
+      "targets": [
+        {
+          "expr": "devsecops_block_rate",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": null, "color": "green" },
+              { "value": 20, "color": "orange" },
+              { "value": 50, "color": "red" }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Violations By Rule",
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 6 },
+      "targets": [
+        {
+          "expr": "devsecops_violation_count",
+          "format": "table",
+          "instant": true,
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "orientation": "horizontal"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Scans Over Time",
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 6 },
+      "targets": [
+        {
+          "expr": "rate(devsecops_scans_total[1m])",
+          "refId": "A",
+          "legendFormat": "Scans/sec"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    }
+  ]
+}

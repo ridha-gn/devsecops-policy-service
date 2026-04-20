@@ -1,0 +1,5 @@
+commit 56fe6a57a3f983533da3e8561a919469205b3115
+Author: Ridha <ridhagnounou.rg@gmail.com>
+Date:   Sat Apr 18 23:11:08 2026 +0100
+
+    feat: complete Auto-Fix, PDF export, Prometheus metrics, and VS Code extension
