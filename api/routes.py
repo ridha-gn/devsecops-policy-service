@@ -51,7 +51,7 @@ async def analyze_code(request: AnalyzeRequest):
             filename=filename,
             code_type=request.code_type.value,
             decision=decision.value,
-            violations=[v.dict() for v in violations_out],
+            violations=[v.model_dump() for v in violations_out],
             scan_time_ms=result.scan_duration_ms or 0,
             block_threshold=request.block_threshold.value,
         )

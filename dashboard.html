@@ -938,7 +938,7 @@
       <div class="nav-item" onclick="showView('policies', this)">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="1"/><line x1="5" y1="6" x2="11" y2="6"/><line x1="5" y1="9" x2="9" y2="9"/></svg>
         Policies
-        <span class="nav-badge">100</span>
+        <span class="nav-badge">103</span>
       </div>
     </div>
   </nav>
@@ -1053,7 +1053,7 @@
     <div class="view" id="view-scan">
       <div class="page-header">
         <div class="page-title">Scan Code</div>
-        <div class="page-sub">Analyze Terraform, Dockerfile, or Kubernetes YAML against 100 security policies</div>
+        <div class="page-sub">Analyze Terraform, Dockerfile, or Kubernetes YAML against 103 security policies</div>
       </div>
 
       <div class="scan-grid">
@@ -1168,11 +1168,11 @@
     <div class="view" id="view-policies">
       <div class="page-header">
         <div class="page-title">Security Policies</div>
-        <div class="page-sub">100 policies across Terraform, Dockerfile, and Kubernetes</div>
+        <div class="page-sub">103 policies across Terraform, Dockerfile, Kubernetes, Azure, and GCP</div>
       </div>
 
       <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
-        <button class="threshold-pill active" onclick="filterPolicies('ALL', this)">ALL (100)</button>
+        <button class="threshold-pill active" onclick="filterPolicies('ALL', this)">ALL (103)</button>
         <button class="threshold-pill critical" onclick="filterPolicies('CRITICAL', this)">CRITICAL</button>
         <button class="threshold-pill high" onclick="filterPolicies('HIGH', this)">HIGH</button>
         <button class="threshold-pill medium" onclick="filterPolicies('MEDIUM', this)">MEDIUM</button>
@@ -1180,6 +1180,8 @@
         <button class="threshold-pill" onclick="filterPolicies('terraform', this)">Terraform</button>
         <button class="threshold-pill" onclick="filterPolicies('docker', this)">Docker</button>
         <button class="threshold-pill" onclick="filterPolicies('k8s', this)">Kubernetes</button>
+        <button class="threshold-pill" onclick="filterPolicies('azure', this)">Azure</button>
+        <button class="threshold-pill" onclick="filterPolicies('gcp', this)">GCP</button>
       </div>
 
       <div class="policies-grid" id="policiesGrid"></div>
@@ -1297,38 +1299,38 @@ const POLICIES = [
   {id:'SECRETS_MANAGER_NO_ROTATION',sev:'MEDIUM',desc:'Secrets Manager secrets should auto-rotate',type:'terraform'},
   {id:'CLOUDFRONT_HTTP_ALLOWED',sev:'HIGH',desc:'CloudFront distributions should redirect HTTP to HTTPS',type:'terraform'},
   // --- AZURE POLICIES ---
-  {id:'AZURE_STORAGE_NO_SECURE_TRANSFER',sev:'HIGH',desc:'Azure Storage must require secure transfer (HTTPS)',type:'terraform'},
-  {id:'AZURE_STORAGE_PUBLIC_ACCESS',sev:'CRITICAL',desc:'Azure Storage blobs must not allow public access',type:'terraform'},
-  {id:'AZURE_VM_PASSWORD_AUTH',sev:'HIGH',desc:'Azure VMs should prefer SSH keys over password authentication',type:'terraform'},
-  {id:'AZURE_VM_PUBLIC_IP',sev:'MEDIUM',desc:'Azure VMs should not have direct public IP addresses',type:'terraform'},
-  {id:'AZURE_SQL_NO_TDE',sev:'HIGH',desc:'Azure SQL databases must have Transparent Data Encryption enabled',type:'terraform'},
-  {id:'AZURE_SQL_PUBLIC_NETWORK_ACCESS',sev:'HIGH',desc:'Azure SQL should disable public network access',type:'terraform'},
-  {id:'AZURE_REDIS_NON_SSL',sev:'MEDIUM',desc:'Azure Redis Cache must only accept SSL connections',type:'terraform'},
-  {id:'AZURE_KEYVAULT_RECOVERABILITY',sev:'MEDIUM',desc:'Azure Key Vault must enable soft-delete and purge protection',type:'terraform'},
-  {id:'AZURE_KEYVAULT_PUBLIC_NETWORK',sev:'MEDIUM',desc:'Azure Key Vault should restrict public network access',type:'terraform'},
-  {id:'AZURE_APP_SERVICE_HTTP2_DISABLED',sev:'LOW',desc:'Azure App Service should use HTTP 2.0',type:'terraform'},
-  {id:'AZURE_APP_SERVICE_HTTPS_ONLY',sev:'HIGH',desc:'Azure App Service must enforce HTTPS only routing',type:'terraform'},
-  {id:'AZURE_COSMOSDB_NO_VNET',sev:'MEDIUM',desc:'Azure Cosmos DB should use Virtual Network service endpoints',type:'terraform'},
-  {id:'AZURE_AKS_RBAC_DISABLED',sev:'HIGH',desc:'Azure AKS clusters must have RBAC enabled',type:'terraform'},
-  {id:'AZURE_AKS_NETWORK_POLICY_MISSING',sev:'MEDIUM',desc:'Azure AKS must have network policies configured',type:'terraform'},
-  {id:'AZURE_DEFENDER_DISABLED',sev:'MEDIUM',desc:'Microsoft Defender for Cloud should be enabled for resources',type:'terraform'},
+  {id:'AZURE_STORAGE_NO_SECURE_TRANSFER',sev:'HIGH',desc:'Azure Storage must require secure transfer (HTTPS)',type:'azure'},
+  {id:'AZURE_STORAGE_PUBLIC_ACCESS',sev:'CRITICAL',desc:'Azure Storage blobs must not allow public access',type:'azure'},
+  {id:'AZURE_VM_PASSWORD_AUTH',sev:'HIGH',desc:'Azure VMs should prefer SSH keys over password authentication',type:'azure'},
+  {id:'AZURE_VM_PUBLIC_IP',sev:'MEDIUM',desc:'Azure VMs should not have direct public IP addresses',type:'azure'},
+  {id:'AZURE_SQL_NO_TDE',sev:'HIGH',desc:'Azure SQL databases must have Transparent Data Encryption enabled',type:'azure'},
+  {id:'AZURE_SQL_PUBLIC_NETWORK_ACCESS',sev:'HIGH',desc:'Azure SQL should disable public network access',type:'azure'},
+  {id:'AZURE_REDIS_NON_SSL',sev:'MEDIUM',desc:'Azure Redis Cache must only accept SSL connections',type:'azure'},
+  {id:'AZURE_KEYVAULT_RECOVERABILITY',sev:'MEDIUM',desc:'Azure Key Vault must enable soft-delete and purge protection',type:'azure'},
+  {id:'AZURE_KEYVAULT_PUBLIC_NETWORK',sev:'MEDIUM',desc:'Azure Key Vault should restrict public network access',type:'azure'},
+  {id:'AZURE_APP_SERVICE_HTTP2_DISABLED',sev:'LOW',desc:'Azure App Service should use HTTP 2.0',type:'azure'},
+  {id:'AZURE_APP_SERVICE_HTTPS_ONLY',sev:'HIGH',desc:'Azure App Service must enforce HTTPS only routing',type:'azure'},
+  {id:'AZURE_COSMOSDB_NO_VNET',sev:'MEDIUM',desc:'Azure Cosmos DB should use Virtual Network service endpoints',type:'azure'},
+  {id:'AZURE_AKS_RBAC_DISABLED',sev:'HIGH',desc:'Azure AKS clusters must have RBAC enabled',type:'azure'},
+  {id:'AZURE_AKS_NETWORK_POLICY_MISSING',sev:'MEDIUM',desc:'Azure AKS must have network policies configured',type:'azure'},
+  {id:'AZURE_DEFENDER_DISABLED',sev:'MEDIUM',desc:'Microsoft Defender for Cloud should be enabled for resources',type:'azure'},
   // --- GCP POLICIES ---
-  {id:'GCP_STORAGE_BUCKET_PUBLIC',sev:'CRITICAL',desc:'GCP Cloud Storage buckets must not be public',type:'terraform'},
-  {id:'GCP_STORAGE_NO_UNIFORM_BACL',sev:'MEDIUM',desc:'GCP Storage must enforce Uniform Bucket Level Access',type:'terraform'},
-  {id:'GCP_COMPUTE_OSLOGIN_DISABLED',sev:'HIGH',desc:'GCP Compute Engine must have OS Login enabled',type:'terraform'},
-  {id:'GCP_COMPUTE_DEFAULT_SA',sev:'HIGH',desc:'GCP Compute instances should not use the default service account',type:'terraform'},
-  {id:'GCP_COMPUTE_SHIELDED_VM_DISABLED',sev:'MEDIUM',desc:'GCP Compute instances must use Shielded VM features',type:'terraform'},
-  {id:'GCP_COMPUTE_IP_FORWARDING',sev:'MEDIUM',desc:'GCP Compute instances should disable IP forwarding',type:'terraform'},
-  {id:'GCP_COMPUTE_PUBLIC_IP',sev:'MEDIUM',desc:'GCP Compute instances must not have external IPs',type:'terraform'},
-  {id:'GCP_SQL_PUBLIC_IP',sev:'CRITICAL',desc:'GCP Cloud SQL should not have public IP enabled',type:'terraform'},
-  {id:'GCP_SQL_NO_SSL',sev:'HIGH',desc:'GCP Cloud SQL must require SSL connections',type:'terraform'},
-  {id:'GCP_SQL_NO_BACKUPS',sev:'HIGH',desc:'GCP Cloud SQL must have automated backups enabled',type:'terraform'},
-  {id:'GCP_GKE_LEGACY_AUTH',sev:'HIGH',desc:'GCP GKE clusters must disable legacy authorization',type:'terraform'},
-  {id:'GCP_GKE_MASTER_AUTHORIZED_NETWORKS',sev:'MEDIUM',desc:'GCP GKE should use master authorized networks',type:'terraform'},
-  {id:'GCP_GKE_BASIC_AUTH',sev:'HIGH',desc:'GCP GKE clusters must disable basic authentication',type:'terraform'},
-  {id:'GCP_IAM_WORKLOAD_IDENTITY_DISABLED',sev:'MEDIUM',desc:'GCP GKE should use Workload Identity for GCP APIs',type:'terraform'},
-  {id:'GCP_PUBSUB_NO_KMS',sev:'LOW',desc:'GCP Pub/Sub topics should be encrypted with customer-managed KMS keys',type:'terraform'},
-  {id:'GCP_IAM_PRIMITIVE_ROLE_USED',sev:'HIGH',desc:'GCP IAM users should not have primitive roles (Owner, Editor)',type:'terraform'},
+  {id:'GCP_STORAGE_BUCKET_PUBLIC',sev:'CRITICAL',desc:'GCP Cloud Storage buckets must not be public',type:'gcp'},
+  {id:'GCP_STORAGE_NO_UNIFORM_BACL',sev:'MEDIUM',desc:'GCP Storage must enforce Uniform Bucket Level Access',type:'gcp'},
+  {id:'GCP_COMPUTE_OSLOGIN_DISABLED',sev:'HIGH',desc:'GCP Compute Engine must have OS Login enabled',type:'gcp'},
+  {id:'GCP_COMPUTE_DEFAULT_SA',sev:'HIGH',desc:'GCP Compute instances should not use the default service account',type:'gcp'},
+  {id:'GCP_COMPUTE_SHIELDED_VM_DISABLED',sev:'MEDIUM',desc:'GCP Compute instances must use Shielded VM features',type:'gcp'},
+  {id:'GCP_COMPUTE_IP_FORWARDING',sev:'MEDIUM',desc:'GCP Compute instances should disable IP forwarding',type:'gcp'},
+  {id:'GCP_COMPUTE_PUBLIC_IP',sev:'MEDIUM',desc:'GCP Compute instances must not have external IPs',type:'gcp'},
+  {id:'GCP_SQL_PUBLIC_IP',sev:'CRITICAL',desc:'GCP Cloud SQL should not have public IP enabled',type:'gcp'},
+  {id:'GCP_SQL_NO_SSL',sev:'HIGH',desc:'GCP Cloud SQL must require SSL connections',type:'gcp'},
+  {id:'GCP_SQL_NO_BACKUPS',sev:'HIGH',desc:'GCP Cloud SQL must have automated backups enabled',type:'gcp'},
+  {id:'GCP_GKE_LEGACY_AUTH',sev:'HIGH',desc:'GCP GKE clusters must disable legacy authorization',type:'gcp'},
+  {id:'GCP_GKE_MASTER_AUTHORIZED_NETWORKS',sev:'MEDIUM',desc:'GCP GKE should use master authorized networks',type:'gcp'},
+  {id:'GCP_GKE_BASIC_AUTH',sev:'HIGH',desc:'GCP GKE clusters must disable basic authentication',type:'gcp'},
+  {id:'GCP_IAM_WORKLOAD_IDENTITY_DISABLED',sev:'MEDIUM',desc:'GCP GKE should use Workload Identity for GCP APIs',type:'gcp'},
+  {id:'GCP_PUBSUB_NO_KMS',sev:'LOW',desc:'GCP Pub/Sub topics should be encrypted with customer-managed KMS keys',type:'gcp'},
+  {id:'GCP_IAM_PRIMITIVE_ROLE_USED',sev:'HIGH',desc:'GCP IAM users should not have primitive roles (Owner, Editor)',type:'gcp'},
 ];
 
 const SEV_ORDER = {CRITICAL:4, HIGH:3, MEDIUM:2, LOW:1};
