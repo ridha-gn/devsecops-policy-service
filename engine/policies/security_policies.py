@@ -2892,7 +2892,89 @@ class CloudFrontHTTPSPolicy(BasePolicy):
 
 
 # ==============================================================================
-# REGISTRY — returns all 100 policies
+# NEW POLICIES — AZURE / GCP BONUS (3 new)
+# ==============================================================================
+
+class AzureStoragePublicAccessPolicy(BasePolicy):
+    def __init__(self):
+        super().__init__(
+            rule_id="AZURE_STORAGE_PUBLIC_ACCESS",
+            severity=PolicySeverity.CRITICAL,
+            description="Azure Storage blobs must not allow public access"
+        )
+
+    def check(self, code: NormalizedCode) -> List[PolicyViolation]:
+        violations = []
+        accounts = code.find_resources_by_type("azurerm_storage_account")
+        for account in accounts:
+            public_access = account.get_attribute("allow_nested_items_to_be_public", True)
+            if public_access:
+                violations.append(PolicyViolation(
+                    rule_id=self.rule_id,
+                    severity=self.severity,
+                    message=f"Azure Storage Account '{account.resource_name}' allows public access",
+                    line_number=account.line_number,
+                    resource_type=account.resource_type,
+                    resource_name=account.resource_name,
+                    recommendation="Set allow_nested_items_to_be_public = false"
+                ))
+        return violations
+
+
+class AzureSQLPublicNetworkAccessPolicy(BasePolicy):
+    def __init__(self):
+        super().__init__(
+            rule_id="AZURE_SQL_PUBLIC_NETWORK_ACCESS",
+            severity=PolicySeverity.HIGH,
+            description="Azure SQL should disable public network access"
+        )
+
+    def check(self, code: NormalizedCode) -> List[PolicyViolation]:
+        violations = []
+        servers = code.find_resources_by_type("azurerm_mssql_server")
+        for server in servers:
+            public_access = server.get_attribute("public_network_access_enabled", True)
+            if public_access:
+                violations.append(PolicyViolation(
+                    rule_id=self.rule_id,
+                    severity=self.severity,
+                    message=f"Azure SQL Server '{server.resource_name}' has public network access enabled",
+                    line_number=server.line_number,
+                    resource_type=server.resource_type,
+                    resource_name=server.resource_name,
+                    recommendation="Set public_network_access_enabled = false"
+                ))
+        return violations
+
+
+class GCPStorageBucketPublicPolicy(BasePolicy):
+    def __init__(self):
+        super().__init__(
+            rule_id="GCP_STORAGE_BUCKET_PUBLIC",
+            severity=PolicySeverity.CRITICAL,
+            description="GCP Cloud Storage buckets must not be public"
+        )
+
+    def check(self, code: NormalizedCode) -> List[PolicyViolation]:
+        violations = []
+        bindings = code.find_resources_by_type("google_storage_bucket_iam_binding")
+        for binding in bindings:
+            members = binding.get_attribute("members", [])
+            if "allUsers" in members or "allAuthenticatedUsers" in members:
+                violations.append(PolicyViolation(
+                    rule_id=self.rule_id,
+                    severity=self.severity,
+                    message=f"GCP Storage Bucket IAM binding '{binding.resource_name}' allows public access",
+                    line_number=binding.line_number,
+                    resource_type=binding.resource_type,
+                    resource_name=binding.resource_name,
+                    recommendation="Remove 'allUsers' and 'allAuthenticatedUsers' from members"
+                ))
+        return violations
+
+
+# ==============================================================================
+# REGISTRY — returns all 103 policies
 # ==============================================================================
 
 def get_all_policies() -> List[BasePolicy]:
@@ -3023,4 +3105,9 @@ def get_all_policies() -> List[BasePolicy]:
         ECRImageMutabilityPolicy(),
         SecretManagerRotationPolicy(),
         CloudFrontHTTPSPolicy(),
+
+        # Azure / GCP Bonus
+        AzureStoragePublicAccessPolicy(),
+        AzureSQLPublicNetworkAccessPolicy(),
+        GCPStorageBucketPublicPolicy(),
     ]

@@ -3,16 +3,17 @@ from pydantic import BaseModel, Field
 from enum import Enum
 
 
+# ── Code types ─────────────────────────────────────────────────────────────────
 class CodeType(str, Enum):
-    TERRAFORM = "terraform"
+    TERRAFORM  = "terraform"
     DOCKERFILE = "dockerfile"
-    YAML = "yaml"
+    YAML       = "yaml"
 
 
 class BlockThreshold(str, Enum):
-    LOW = "LOW"
-    MEDIUM = "MEDIUM"
-    HIGH = "HIGH"
+    LOW      = "LOW"
+    MEDIUM   = "MEDIUM"
+    HIGH     = "HIGH"
     CRITICAL = "CRITICAL"
 
 
@@ -32,10 +33,10 @@ class AnalyzeRequest(BaseModel):
 
 class Severity(str, Enum):
     CRITICAL = "CRITICAL"
-    HIGH = "HIGH"
-    MEDIUM = "MEDIUM"
-    LOW = "LOW"
-    INFO = "INFO"
+    HIGH     = "HIGH"
+    MEDIUM   = "MEDIUM"
+    LOW      = "LOW"
+    INFO     = "INFO"
 
 
 class Violation(BaseModel):
@@ -72,11 +73,11 @@ class ScanHistoryItem(BaseModel):
     block_threshold: str
 
 
-# ── Auto-Fix Schemas ──
-
+# ── Auto-Fix Schemas ───────────────────────────────────────────────────────────
 class FixRequest(BaseModel):
     code_type: CodeType = Field(..., description="Type of infrastructure code")
     content: str = Field(..., description="The insecure code to fix")
+
 
 class FixDetail(BaseModel):
     rule_id: str
@@ -85,9 +86,48 @@ class FixDetail(BaseModel):
     original: str
     fixed: str
 
+
 class FixResponse(BaseModel):
     original_code: str
     fixed_code: str
     fixes_applied: List[FixDetail] = []
     total_fixes: int = 0
     diff: Optional[str] = None
+
+
+# ── RBAC / Auth Schemas ────────────────────────────────────────────────────────
+class UserRole(str, Enum):
+    DEVELOPER        = "DEVELOPER"
+    DEVOPS_ENGINEER  = "DEVOPS_ENGINEER"
+    SECURITY_OFFICER = "SECURITY_OFFICER"
+    SUPER_ADMIN      = "SUPER_ADMIN"
+
+
+class LoginRequest(BaseModel):
+    username: str = Field(..., example="admin")
+    password: str = Field(..., example="admin123")
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    role: str
+    username: str
+
+
+class UserCreate(BaseModel):
+    username: str = Field(..., min_length=3, max_length=50, example="john_dev")
+    password: str = Field(..., min_length=6, example="SecurePass123")
+    role: UserRole = Field(UserRole.DEVELOPER, example="DEVELOPER")
+
+
+class UserOut(BaseModel):
+    id: int
+    username: str
+    role: UserRole
+    created_at: str
+    created_by: Optional[str] = "system"
+
+
+class RoleUpdate(BaseModel):
+    role: UserRole = Field(..., example="DEVOPS_ENGINEER")

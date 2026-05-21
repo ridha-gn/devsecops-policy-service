@@ -1,0 +1,175 @@
+\begin{thebibliography}{26}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[{Amazon Web Services}(2024)]{aws2024wellarchitected}
+{Amazon Web Services}.
+\newblock {AWS Well-Architected Framework — Security Pillar}.
+\newblock
+  \url{https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/},
+  2024.
+\newblock Accessed: April 2026.
+
+\bibitem[{Aqua Security}(2024{\natexlab{a}})]{aquasecurity2024tfsec}
+{Aqua Security}.
+\newblock {tfsec — Security Scanner for Terraform}.
+\newblock \url{https://github.com/aquasecurity/tfsec}, 2024{\natexlab{a}}.
+\newblock Accessed: April 2026.
+
+\bibitem[{Aqua Security}(2024{\natexlab{b}})]{aquasecurity2024trivy}
+{Aqua Security}.
+\newblock {Trivy — Comprehensive Security Scanner}.
+\newblock \url{https://github.com/aquasecurity/trivy}, 2024{\natexlab{b}}.
+\newblock Accessed: April 2026.
+
+\bibitem[Bass et~al.(2015)Bass, Weber, and Zhu]{bass2015devops}
+Len Bass, Ingo Weber, and Liming Zhu.
+\newblock \emph{{DevOps: A Software Architect's Perspective}}.
+\newblock Addison-Wesley Professional, 2015.
+\newblock ISBN 978-0134049847.
+
+\bibitem[{Bridgecrew by Palo Alto Networks}(2024)]{bridgecrew2024checkov}
+{Bridgecrew by Palo Alto Networks}.
+\newblock {Checkov — Policy-as-Code for Infrastructure}.
+\newblock \url{https://www.checkov.io/}, 2024.
+\newblock Accessed: April 2026.
+
+\bibitem[Burns et~al.(2022)Burns, Beda, Hightower, and
+  Evenson]{burns2022kubernetes}
+Brendan Burns, Joe Beda, Kelsey Hightower, and Lachlan Evenson.
+\newblock \emph{{Kubernetes: Up and Running}}.
+\newblock O'Reilly Media, 3rd edition, 2022.
+\newblock ISBN 978-1098110208.
+
+\bibitem[{Center for Internet Security}(2024)]{cis2024benchmarks}
+{Center for Internet Security}.
+\newblock {CIS Benchmarks for Cloud Providers}.
+\newblock \url{https://www.cisecurity.org/cis-benchmarks}, 2024.
+\newblock Accessed: April 2026.
+
+\bibitem[{Cloud Native Computing Foundation}(2024)]{openpolicyagent2024}
+{Cloud Native Computing Foundation}.
+\newblock {Open Policy Agent (OPA)}.
+\newblock \url{https://www.openpolicyagent.org/}, 2024.
+\newblock Accessed: April 2026.
+
+\bibitem[Colvin(2024)]{pydantic2024docs}
+Samuel Colvin.
+\newblock {Pydantic — Data Validation for Python}.
+\newblock \url{https://docs.pydantic.dev/}, 2024.
+\newblock Accessed: April 2026.
+
+\bibitem[{Docker Inc.}(2024)]{docker2024docs}
+{Docker Inc.}
+\newblock {Dockerfile Reference}.
+\newblock \url{https://docs.docker.com/engine/reference/builder/}, 2024.
+\newblock Accessed: April 2026.
+
+\bibitem[Gamma et~al.(1994)Gamma, Helm, Johnson, and
+  Vlissides]{gamma1994patterns}
+Erich Gamma, Richard Helm, Ralph Johnson, and John Vlissides.
+\newblock \emph{{Design Patterns: Elements of Reusable Object-Oriented
+  Software}}.
+\newblock Addison-Wesley, 1994.
+\newblock ISBN 978-0201633610.
+
+\bibitem[{Gitea Authors}(2024)]{gitea2024docs}
+{Gitea Authors}.
+\newblock {Gitea — Self-Hosted Git Service}.
+\newblock \url{https://docs.gitea.com/}, 2024.
+\newblock Accessed: April 2026.
+
+\bibitem[{Grafana Labs}(2024)]{grafana2024docs}
+{Grafana Labs}.
+\newblock {Grafana — Observability Platform}.
+\newblock \url{https://grafana.com/docs/grafana/latest/}, 2024.
+\newblock Accessed: April 2026.
+
+\bibitem[{HashiCorp}(2024)]{hashicorp2024terraform}
+{HashiCorp}.
+\newblock {Terraform Documentation}.
+\newblock \url{https://developer.hashicorp.com/terraform/docs}, 2024.
+\newblock Accessed: April 2026.
+
+\bibitem[{Jenkins Project}(2024)]{jenkins2024docs}
+{Jenkins Project}.
+\newblock {Jenkins — Open Source Automation Server}.
+\newblock \url{https://www.jenkins.io/doc/}, 2024.
+\newblock Accessed: April 2026.
+
+\bibitem[Martin(2017)]{martin2017cleanarch}
+Robert~C. Martin.
+\newblock \emph{{Clean Architecture: A Craftsman's Guide to Software Structure
+  and Design}}.
+\newblock Prentice Hall, 2017.
+\newblock ISBN 978-0134494166.
+
+\bibitem[{Microsoft}(2024)]{vscode2024api}
+{Microsoft}.
+\newblock {Visual Studio Code Extension API}.
+\newblock \url{https://code.visualstudio.com/api}, 2024.
+\newblock Accessed: April 2026.
+
+\bibitem[Mohan and Othmane(2016)]{mohan2016shiftleft}
+Vishwas Mohan and Lotfi~ben Othmane.
+\newblock {SecDevOps: Is It a Marketing Buzzword? Mapping Research on Security
+  in DevOps}.
+\newblock \emph{IEEE International Conference on Availability, Reliability and
+  Security}, 2016.
+\newblock \doi{10.1109/ARES.2016.92}.
+
+\bibitem[Morris(2020)]{morris2020iac}
+Kief Morris.
+\newblock \emph{{Infrastructure as Code: Dynamic Systems for the Cloud Age}}.
+\newblock O'Reilly Media, 2nd edition, 2020.
+\newblock ISBN 978-1098114671.
+
+\bibitem[Myrbakken and Colomo-Palacios(2017)]{myrbakken2017devsecops}
+H.~Myrbakken and R.~Colomo-Palacios.
+\newblock {DevSecOps: A Multivocal Literature Review}.
+\newblock \emph{Communications in Computer and Information Science},
+  770:\penalty0 17--29, 2017.
+\newblock \doi{10.1007/978-3-319-67383-7_2}.
+
+\bibitem[{Prometheus Authors}(2024)]{prometheus2024docs}
+{Prometheus Authors}.
+\newblock {Prometheus — Monitoring and Alerting Toolkit}.
+\newblock \url{https://prometheus.io/docs/}, 2024.
+\newblock Accessed: April 2026.
+
+\bibitem[Rajapakse et~al.(2022)Rajapakse, Zahedi, and
+  Babar]{rajapakse2022challenges}
+Roshan Rajapakse, Mansooreh Zahedi, and Muhammad~Ali Babar.
+\newblock {Challenges and Solutions When Adopting DevSecOps: A Systematic
+  Review}.
+\newblock In \emph{Information and Software Technology}, volume 141, 2022.
+\newblock \doi{10.1016/j.infsof.2021.106700}.
+
+\bibitem[Ramírez(2024)]{fastapi2024docs}
+Sebastián Ramírez.
+\newblock {FastAPI — Modern Web Framework for Python}.
+\newblock \url{https://fastapi.tiangolo.com/}, 2024.
+\newblock Accessed: April 2026.
+
+\bibitem[Schwaber and Sutherland(2020)]{schwaber2020scrum}
+Ken Schwaber and Jeff Sutherland.
+\newblock \emph{{The Scrum Guide}}.
+\newblock Scrum.org, 2020.
+\newblock Available at \url{https://scrumguides.org/}.
+
+\bibitem[{The Kubernetes Authors}(2024)]{kubernetes2024docs}
+{The Kubernetes Authors}.
+\newblock {Kubernetes Documentation}.
+\newblock \url{https://kubernetes.io/docs/}, 2024.
+\newblock Accessed: April 2026.
+
+\bibitem[Turnbull(2014)]{turnbull2014docker}
+James Turnbull.
+\newblock \emph{{The Docker Book: Containerization Is the New Virtualization}}.
+\newblock James Turnbull, 2014.
+\newblock ISBN 978-0988820241.
+
+\end{thebibliography}

@@ -1,0 +1,412 @@
+% ============================================================================
+%  Chapter 4 — Sprint 1: Core Microservice
+% ============================================================================
+
+\chapter{Sprint 1: Core Microservice}
+\label{chap:sprint1}
+
+\section{Introduction}
+
+This chapter covers the first sprint, where we built the foundation of the entire microservice. The main work was setting up the REST API, implementing parsers for three IaC formats, designing the normalization layer, and creating the first twelve security policies.
+
+
+\section{Sprint Objectives}
+
+\begin{enumerate}[leftmargin=1.5cm]
+  \item Set up the project structure, development environment, and version control.
+  \item Build the FastAPI application with the \texttt{POST /analyze} endpoint.
+  \item Develop parsers for Terraform, Dockerfile, and Kubernetes YAML.
+  \item Design and implement the normalization layer that produces a unified \texttt{NormalizedCode} model.
+  \item Create the first twelve security policies covering the most critical vulnerability types.
+  \item Write automated tests to validate the full scan pipeline.
+\end{enumerate}
+
+
+\section{Sprint Backlog}
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{|c|X|c|c|}
+\hline
+\textbf{ID} & \textbf{Task} & \textbf{Story} & \textbf{Status} \\
+\hline
+T-01 & Initialize FastAPI project with Uvicorn and CORS middleware. & US-01 & Done \\
+\hline
+T-02 & Define Pydantic request/response schemas. & US-01 & Done \\
+\hline
+T-03 & Implement \texttt{TerraformParser} with HCL2 parsing. & US-01 & Done \\
+\hline
+T-04 & Implement \texttt{DockerfileParser} with regex-based extraction. & US-02 & Done \\
+\hline
+T-05 & Implement \texttt{KubernetesParser} with PyYAML. & US-03 & Done \\
+\hline
+T-06 & Implement \texttt{get\_parser()} factory function. & US-01 & Done \\
+\hline
+T-07 & Design \texttt{NormalizedCode} and \texttt{Resource} data models. & US-01 & Done \\
+\hline
+T-08 & Implement \texttt{Normalizer} class. & US-01 & Done \\
+\hline
+T-09 & Implement \texttt{BasePolicy} and 12 initial policies. & US-04--06 & Done \\
+\hline
+T-10 & Implement \texttt{PolicyEngine.analyze()} with decision logic. & US-07 & Done \\
+\hline
+T-11 & Implement \texttt{/health} endpoint. & US-07 & Done \\
+\hline
+T-12 & Write pytest test suite for all endpoints. & --- & Done \\
+\hline
+\end{tabularx}
+\caption{Sprint 1 backlog.}
+\label{tab:s1-backlog}
+\end{table}
+
+
+\section{Use Case Refinement}
+
+\subsection{Use Case: Analyze Infrastructure Code}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    actor/.style = {font=\small\bfseries},
+    usecase/.style = {
+        draw, thick, ellipse,
+        minimum width=2.6cm, minimum height=0.85cm,
+        align=center, font=\scriptsize
+    },
+    arr/.style = {-, thick}
+]
+
+% System boundary
+\draw[thick, rounded corners=8pt, fill=blue!3]
+    (2, -3.8) rectangle (10, 1);
+\node[font=\small\bfseries, anchor=north west] at (2.2, 0.9) {Sprint 1 --- Core Microservice};
+
+% Use cases
+\node[usecase, fill=white] (analyze) at (6, 0) {Analyze\\Infrastructure Code};
+\node[usecase, fill=white] (parse)   at (6, -1.3) {Parse IaC\\Format};
+\node[usecase, fill=white] (norm)    at (6, -2.5) {Normalize\\to Unified Model};
+\node[usecase, fill=white] (check)   at (6, -3.5) {Check Security\\Policies};
+
+% Actor
+\node[actor] (devops) at (-0.5, -1) {DevOps\\Engineer};
+
+% Connections
+\draw[arr] (devops) -- (analyze);
+\draw[-{Stealth}, thick, dashed] (analyze) -- node[right, font=\tiny] {\guillemotleft include\guillemotright} (parse);
+\draw[-{Stealth}, thick, dashed] (parse) -- node[right, font=\tiny] {\guillemotleft include\guillemotright} (norm);
+\draw[-{Stealth}, thick, dashed] (norm) -- node[right, font=\tiny] {\guillemotleft include\guillemotright} (check);
+
+\end{tikzpicture}
+\caption{Sprint 1 use case diagram: Analyze Infrastructure Code with internal steps.}
+\label{fig:s1-usecase}
+\end{figure}
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+\textbf{Use Case} & Analyze Infrastructure Code \\
+\hline
+\textbf{Actor} & DevOps Engineer \\
+\hline
+\textbf{Precondition} & The policy service is running on port 8000. \\
+\hline
+\textbf{Postcondition} & The actor receives an ALLOW or BLOCK decision with a list of violations. \\
+\hline
+\textbf{Nominal Scenario} &
+  \begin{enumerate}[leftmargin=0.8cm, nosep]
+    \item The actor sends a POST request to \texttt{/analyze} with \texttt{code\_type} and \texttt{content}.
+    \item The API validates the request using Pydantic schemas.
+    \item The factory function picks the right parser.
+    \item The parser turns the raw code into a structured dictionary.
+    \item The normalizer converts the parsed data into a \texttt{NormalizedCode} model.
+    \item The policy engine checks all applicable policies.
+    \item The engine decides ALLOW or BLOCK based on the severity threshold.
+    \item The API returns the decision, the violations list, and how long the scan took.
+  \end{enumerate} \\
+\hline
+\textbf{Alternative} &
+  \begin{itemize}[leftmargin=0.8cm, nosep]
+    \item[A1.] Unsupported \texttt{code\_type}: API returns HTTP 422.
+    \item[A2.] Parsing failure: API returns HTTP 500 with an error message.
+  \end{itemize} \\
+\hline
+\end{tabularx}
+\caption{Textual description --- ``Analyze Infrastructure Code'' use case.}
+\label{tab:uc-analyze}
+\end{table}
+
+
+\section{Sequence Diagram}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    participant/.style = {
+        draw, thick, rectangle, rounded corners=2pt,
+        minimum width=1.8cm, minimum height=0.6cm,
+        align=center, font=\scriptsize\bfseries,
+        fill=#1
+    },
+    msg/.style = {-{Stealth[length=4pt]}, thick},
+    ret/.style = {-{Stealth[length=4pt]}, thick, dashed}
+]
+
+% Participants
+\node[participant=gray!15] (client) at (0, 0)   {Client};
+\node[participant=blue!15] (api)    at (3, 0)   {API};
+\node[participant=green!15] (parser) at (6, 0)  {Parser};
+\node[participant=orange!15] (norm)  at (9, 0)  {Normalizer};
+\node[participant=red!15] (engine)   at (12, 0) {PolicyEngine};
+
+% Lifelines
+\foreach \n in {client, api, parser, norm, engine}
+    \draw[dashed, thin, gray] (\n.south) -- ++(0, -8);
+
+% Messages
+\draw[msg] (0, -1) -- node[above, font=\tiny] {POST /analyze} (3, -1);
+\draw[msg] (3, -2) -- node[above, font=\tiny] {get\_parser(type)} (6, -2);
+\draw[msg] (3, -2.8) -- node[above, font=\tiny] {parser.parse(code)} (6, -2.8);
+\draw[ret] (6, -3.4) -- node[above, font=\tiny] {parsed\_data} (3, -3.4);
+\draw[msg] (3, -4.2) -- node[above, font=\tiny] {normalize(parsed)} (9, -4.2);
+\draw[ret] (9, -4.8) -- node[above, font=\tiny] {NormalizedCode} (3, -4.8);
+\draw[msg] (3, -5.6) -- node[above, font=\tiny] {analyze(normalized)} (12, -5.6);
+
+% Loop box
+\draw[thick, rounded corners=2pt] (11, -6.0) rectangle (13, -7.0);
+\node[font=\tiny, anchor=north west] at (11.1, -6.05) {loop [each policy]};
+\node[font=\tiny] at (12, -6.55) {policy.check()};
+
+\draw[ret] (12, -7.3) -- node[above, font=\tiny] {violations, decision} (3, -7.3);
+\draw[ret] (3, -7.8) -- node[above, font=\tiny] {AnalyzeResponse (JSON)} (0, -7.8);
+
+\end{tikzpicture}
+\caption{Sprint 1 sequence diagram: the complete analysis flow from client request to response.}
+\label{fig:s1-sequence}
+\end{figure}
+
+
+\section{Realization}
+
+\subsection{Project Structure}
+
+\begin{lstlisting}[language={}, caption={Project directory structure after Sprint 1.}, label={lst:structure}]
+devsecops-policy-service/
+  main.py                    # Application entry point
+  api/
+    routes.py                # REST endpoint definitions
+    schemas.py               # Pydantic request/response models
+  engine/
+    parser.py                # Multi-format parsers
+    normalizer.py            # Normalization layer
+    policy_engine.py         # Policy orchestration
+    policies/
+      security_policies.py   # Policy implementations
+  models/
+    code_structure.py        # NormalizedCode, Resource
+    decision.py              # PolicyDecision, PolicyViolation
+  tests/
+    test_api.py              # Test suite
+  requirements.txt
+  Dockerfile
+\end{lstlisting}
+
+\subsection{Application Entry Point}
+
+The \texttt{main.py} module sets up the FastAPI application, adds CORS middleware, mounts the API router, and starts the Uvicorn server on port 8000.
+
+\begin{lstlisting}[language=Python, caption={Application entry point (\texttt{main.py}).}, label={lst:mainpy}]
+app = FastAPI(
+    title="DevSecOps Policy Service",
+    description="Analyzes infrastructure code and enforces security policies",
+    version="1.0.0"
+)
+app.add_middleware(CORSMiddleware, allow_origins=["*"],
+                   allow_methods=["*"], allow_headers=["*"])
+app.include_router(router)
+
+@app.get("/")
+async def dashboard():
+    return FileResponse("dashboard.html")
+\end{lstlisting}
+
+\subsection{Pydantic Schemas}
+
+We use Pydantic~v2 models to validate requests and responses. This gives us type safety and automatic OpenAPI documentation for free.
+
+\begin{lstlisting}[language=Python, caption={Core Pydantic schemas (excerpt).}, label={lst:schemas}]
+class CodeType(str, Enum):
+    TERRAFORM = "terraform"
+    DOCKERFILE = "dockerfile"
+    YAML = "yaml"
+
+class AnalyzeRequest(BaseModel):
+    code_type: CodeType
+    content: str
+    filename: Optional[str] = None
+    block_threshold: BlockThreshold = BlockThreshold.LOW
+
+class AnalyzeResponse(BaseModel):
+    decision: Decision       # ALLOW or BLOCK
+    violations: List[Violation] = []
+    explanation: str
+    scan_time_ms: Optional[int] = None
+\end{lstlisting}
+
+\subsection{Multi-Format Parser Layer}
+
+The parser layer uses the \textbf{Strategy pattern}: each format has its own parser class, and the \texttt{get\_parser()} factory picks the right one at runtime.
+
+\subsubsection{Terraform Parser and the \_strip\_quotes Fix}
+
+The \texttt{TerraformParser} uses \texttt{python-hcl2} to parse HCL files. We had to implement an important fix in the \texttt{\_strip\_quotes()} method to handle a compatibility issue with \texttt{python-hcl2} v8.x, which wraps keys and string values in extra quotes (e.g., \texttt{'"aws\_s3\_bucket"'} instead of \texttt{'aws\_s3\_bucket'}).
+
+\begin{lstlisting}[language=Python, caption={Terraform parser with \_strip\_quotes fix (excerpt).}, label={lst:tf-parser}]
+class TerraformParser:
+    @staticmethod
+    def _strip_quotes(value):
+        if isinstance(value, str):
+            if len(value) >= 2 and value.startswith('"') and value.endswith('"'):
+                return value[1:-1]
+            return value
+        elif isinstance(value, dict):
+            return {TerraformParser._strip_quotes(k):
+                    TerraformParser._strip_quotes(v)
+                    for k, v in value.items() if k != '__is_block__'}
+        elif isinstance(value, list):
+            return [TerraformParser._strip_quotes(item) for item in value]
+        return value
+
+    def parse(self, content):
+        parsed = hcl2.loads(content)
+        return self._strip_quotes(parsed)
+\end{lstlisting}
+
+\subsubsection{Dockerfile Parser}
+The \texttt{DockerfileParser} uses a custom regex-based approach to extract Docker instructions, their arguments, and line numbers. This is a lightweight solution that avoids needing extra dependencies.
+
+\subsubsection{Kubernetes Parser}
+The \texttt{KubernetesParser} uses PyYAML's \texttt{safe\_load()} to parse YAML manifests, then walks through the structure to extract pod specs and container definitions.
+
+\subsection{Normalization Layer}
+
+The \texttt{Normalizer} is the most important piece of the architecture. It acts as a bridge between the parsers and the policy engine. Without it, every policy would need to understand every format. The normalizer simplifies this: parsers produce format-specific output, the normalizer converts it all into one unified model, and the policies only need to understand that one model.
+
+\begin{lstlisting}[language=Python, caption={Resource data model (excerpt).}, label={lst:resource}]
+@dataclass
+class Resource:
+    resource_type: str        # e.g., "aws_s3_bucket"
+    resource_name: str        # e.g., "my_bucket"
+    attributes: Dict[str, Any]
+    line_number: Optional[int] = None
+
+@dataclass
+class NormalizedCode:
+    code_type: str
+    resources: List[Resource]
+    variables: Dict[str, Any]
+    metadata: Dict[str, Any]
+\end{lstlisting}
+
+\subsection{Initial Twelve Policies}
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{|l|c|X|}
+\hline
+\textbf{Rule ID} & \textbf{Severity} & \textbf{Description} \\
+\hline
+PUBLIC\_S3\_BUCKET          & HIGH     & S3 buckets must not have public ACL. \\
+\hline
+HARDCODED\_SECRET           & CRITICAL & No hardcoded credentials. \\
+\hline
+UNENCRYPTED\_STORAGE        & HIGH     & S3/RDS storage must be encrypted. \\
+\hline
+DOCKER\_ROOT\_USER          & MEDIUM   & Containers must not run as root. \\
+\hline
+MISSING\_REQUIRED\_TAGS     & LOW      & AWS resources must have compliance tags. \\
+\hline
+INSECURE\_SECURITY\_GROUP   & HIGH     & No unrestricted 0.0.0.0/0 access. \\
+\hline
+MISSING\_LOGGING            & MEDIUM   & S3 must have access logging enabled. \\
+\hline
+PUBLIC\_DATABASE             & CRITICAL & RDS must not be publicly accessible. \\
+\hline
+EXPENSIVE\_INSTANCE\_TYPE   & MEDIUM   & Expensive EC2 instances are flagged. \\
+\hline
+PRIVILEGED\_CONTAINER       & HIGH     & K8s: no privileged mode. \\
+\hline
+HOST\_NETWORK\_ENABLED      & MEDIUM   & K8s: no host network access. \\
+\hline
+MISSING\_RESOURCE\_LIMITS   & LOW      & K8s: resource limits are required. \\
+\hline
+\end{tabularx}
+\caption{Initial twelve security policies.}
+\label{tab:s1-policies}
+\end{table}
+
+Each policy inherits from \texttt{BasePolicy} (\textbf{Template Method pattern}) and overrides the \texttt{check()} method:
+
+\begin{lstlisting}[language=Python, caption={BasePolicy and a concrete policy example.}, label={lst:basepolicy}]
+class BasePolicy:
+    def __init__(self, rule_id, severity, description):
+        self.rule_id = rule_id
+        self.severity = severity
+        self.description = description
+
+    def check(self, code: NormalizedCode) -> List[PolicyViolation]:
+        raise NotImplementedError
+
+class PublicS3BucketPolicy(BasePolicy):
+    def check(self, code):
+        violations = []
+        for bucket in code.find_resources_by_type("aws_s3_bucket"):
+            acl = bucket.get_attribute("acl", "private")
+            if acl in ["public-read", "public-read-write"]:
+                violations.append(PolicyViolation(
+                    rule_id=self.rule_id, severity=self.severity,
+                    message=f"S3 bucket '{bucket.resource_name}' has public ACL",
+                    recommendation="Change ACL to 'private'"
+                ))
+        return violations
+\end{lstlisting}
+
+
+\section{Tests}
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{|l|X|c|}
+\hline
+\textbf{Test} & \textbf{Description} & \textbf{Result} \\
+\hline
+\texttt{test\_root\_endpoint}           & Dashboard HTML served at \texttt{/}. & Pass \\
+\hline
+\texttt{test\_health\_check}            & \texttt{/health} returns healthy status. & Pass \\
+\hline
+\texttt{test\_analyze\_safe\_code}      & Safe Terraform returns ALLOW. & Pass \\
+\hline
+\texttt{test\_analyze\_public\_s3}      & Public S3 triggers violation. & Pass \\
+\hline
+\texttt{test\_analyze\_hardcoded\_secret} & AWS key triggers HARDCODED\_SECRET. & Pass \\
+\hline
+\texttt{test\_invalid\_code\_type}      & Invalid type returns HTTP 422. & Pass \\
+\hline
+\texttt{test\_history}                  & \texttt{/history} returns scan list. & Pass \\
+\hline
+\end{tabularx}
+\caption{Sprint 1 test results.}
+\label{tab:s1-tests}
+\end{table}
+
+
+\section{Interfaces}
+
+\figplaceholder{Swagger UI --- FastAPI /docs}{swagger_ui}
+\figplaceholder{API response: BLOCK decision}{api_block_response}
+\figplaceholder{API response: ALLOW decision}{api_allow_response}
+
+
+\section{Conclusion}
+
+Sprint~1 successfully built the foundation of the microservice. The four-layer design was implemented and tested with seven automated tests. The system can parse three IaC formats, normalize them into a single model, evaluate twelve security policies, and return ALLOW/BLOCK decisions in under 50\,ms. The next sprint expands the policy library to 103~policies and adds configurable severity thresholds.

@@ -1,0 +1,20 @@
+% ============================================================================
+%  Abstract (English + French)
+% ============================================================================
+
+\chapter*{Abstract}
+\addcontentsline{toc}{chapter}{Abstract}
+
+The fast adoption of cloud computing and Infrastructure as Code (IaC) has created serious security challenges. Misconfigurations in infrastructure files can lead to major vulnerabilities in production environments. Traditional security auditing, which relies on manual reviews done late in the development process, simply cannot keep up with the speed of modern DevOps workflows.
+
+This report presents the design and implementation of a \textbf{DevSecOps Policy-as-Code microservice} that automates the security analysis of infrastructure code. The system supports three major IaC formats --- Terraform, Dockerfile, and Kubernetes YAML --- and enforces \textbf{103~security policies} across 15~categories aligned with industry benchmarks such as CIS and AWS Well-Architected Framework. Built on a four-layer architecture using Python and FastAPI, the service achieves an average response time of \textbf{46~milliseconds} and delivers clear ALLOW/BLOCK decisions based on configurable severity thresholds.
+
+The microservice integrates across the entire software delivery lifecycle: a \textbf{Visual Studio Code extension} provides real-time shift-left scanning while coding, a \textbf{web dashboard} offers interactive analysis with one-click auto-remediation of 15+ vulnerability types, and a \textbf{Jenkins CI/CD pipeline} with Gitea enforces automated security gates before deployment. An observability layer using \textbf{Prometheus} and \textbf{Grafana} provides continuous monitoring of scan metrics, block rates, and policy violation trends.
+
+The project was developed over three months using Scrum methodology across four sprints, resulting in 7{,}125~lines of code with a complete test suite achieving 32/32 passing tests. A comparison with existing tools (Checkov, tfsec, Trivy, OPA) shows that the proposed service uniquely combines low-latency scanning, automated remediation, IDE integration, and operational monitoring within a single, fully offline, self-contained platform.
+
+\vspace{0.5cm}
+\noindent\textbf{Keywords:} DevSecOps, Policy-as-Code, Infrastructure as Code, Terraform, Security Automation, Shift-Left Security, CI/CD, Microservice Architecture.
+
+\vspace{0.5cm}
+\noindent\textbf{Keywords:} DevSecOps, Policy-as-Code, Infrastructure as Code, Terraform, Security Automation, Shift-Left Security, CI/CD, Microservice Architecture.

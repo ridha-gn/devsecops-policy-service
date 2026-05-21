@@ -1,0 +1,127 @@
+% ============================================================================
+%  General Conclusion
+% ============================================================================
+
+\chapter*{General Conclusion}
+\addcontentsline{toc}{chapter}{General Conclusion}
+\markboth{General Conclusion}{General Conclusion}
+
+% ── Project Synthesis ────────────────────────────────────────────────────────
+
+This report has presented the design, implementation, and testing of a DevSecOps Policy-as-Code microservice for infrastructure security. Developed as a final year project at ISITCOM Hammam Sousse over three months using the Scrum methodology, the system addresses a real gap in modern software delivery: there is no single tool that provides automated security enforcement across the entire development lifecycle --- from the developer's IDE to the CI/CD pipeline to operational monitoring. Our microservice fills that gap.
+
+% ── Summary of Achievements ──────────────────────────────────────────────────
+
+\vspace{0.3cm}
+\noindent\textbf{Summary of Achievements.}\quad
+The project was built across four sprints, with each one adding a new layer on top of the previous:
+
+\begin{itemize}[leftmargin=1.5cm]
+  \item \textbf{Sprint 1} laid the foundation with the four-layer architecture (API, Parser, Normalizer, Policy Engine). We built dedicated parsers for Terraform, Dockerfile, and Kubernetes YAML, and delivered the first twelve security policies. The normalization layer turned out to be the key architectural decision --- it reduces the complexity of policy evaluation from $N \times M$ to $N + M$, which is what makes multi-format support practical.
+  
+  \item \textbf{Sprint 2} expanded the policy library to 103~policies organized across 15~categories, aligned with CIS benchmarks and AWS best practices. We also added the configurable severity threshold and the diff-only scanning mode, both of which are essential for teams adopting the tool gradually.
+  
+  \item \textbf{Sprint 3} built everything the user interacts with: an interactive web dashboard for scanning and viewing results, an auto-fix engine that can correct 15+ vulnerability types with one click, HTML and PDF compliance reports for audits, and persistent scan history using SQLite.
+  
+  \item \textbf{Sprint 4} connected the microservice to the outside world: a Jenkins CI/CD pipeline with Gitea that automatically blocks insecure deployments (shown through the Alice/Bob demo), a VS Code extension for real-time shift-left scanning with inline diagnostics, and a Prometheus/Grafana monitoring layer for tracking security posture over time.
+\end{itemize}
+
+% ── Key Metrics ──────────────────────────────────────────────────────────────
+
+\vspace{0.3cm}
+\noindent\textbf{Key Metrics.}\quad
+Here are the final numbers for the system:
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{0.85\textwidth}{|X|r|}
+\hline
+\textbf{Metric} & \textbf{Value} \\
+\hline
+Total lines of code       & 7{,}125 \\
+\hline
+Security policies         & 103 \\
+\hline
+Policy categories         & 15 \\
+\hline
+Supported IaC formats     & 3 (Terraform, Dockerfile, Kubernetes) \\
+\hline
+Auto-fixable vulnerabilities & 15+ \\
+\hline
+Average response time     & 46\,ms \\
+\hline
+Test suite                & 32/32 passing, 0 warnings \\
+\hline
+REST API endpoints        & 8 \\
+\hline
+Prometheus metrics        & 8 metric families \\
+\hline
+Cloud dependency          & None (fully offline) \\
+\hline
+\end{tabularx}
+\end{table}
+
+% ── Technical Architecture ───────────────────────────────────────────────────
+
+\vspace{0.3cm}
+\noindent\textbf{Architectural Contributions.}\quad
+Looking back, several design decisions played an important role in making the project work:
+
+\begin{enumerate}[leftmargin=1.5cm]
+  \item The \textbf{four-layer architecture} with a dedicated normalization layer creates a clean boundary between format-specific parsing and format-agnostic policy checking. This makes it straightforward to add support for new IaC formats (like Ansible or Pulumi) in the future.
+  
+  \item The \textbf{Template Method pattern} for policies means that adding a new security rule only requires writing a single Python class with a \texttt{check()} method --- no need to touch any existing code.
+  
+  \item The \textbf{auto-fix engine} uses a regex-based approach that is fast and predictable, without the complexity of building a full AST transformation for each format.
+  
+  \item The \textbf{three-phase integration} (IDE $\rightarrow$ Dashboard $\rightarrow$ CI/CD) ensures that insecure code gets caught no matter which workflow the developer prefers.
+\end{enumerate}
+
+% ── Challenges Overcome ──────────────────────────────────────────────────────
+
+\vspace{0.3cm}
+\noindent\textbf{Challenges We Faced.}\quad
+The project was not without its difficulties. Here are the main challenges we had to solve:
+
+\begin{itemize}[leftmargin=1.5cm]
+  \item \textbf{python-hcl2 v8.x compatibility}: The newer version of the HCL2 parser wraps keys and values in extra quotes, which broke all the resource matching logic. We wrote a recursive \texttt{\_strip\_quotes()} method to fix this transparently.
+  
+  \item \textbf{Multi-format normalization}: Designing a single data model that works for three very different IaC formats (declarative HCL, imperative Dockerfile, YAML manifests) required careful thinking about what to abstract and what to keep format-specific.
+  
+  \item \textbf{Auto-fix precision}: Regex-based code transformation has to be very careful not to change things it should not touch. Each fix function was scoped with targeted patterns and tested to avoid false positives.
+  
+  \item \textbf{Fully offline setup}: Making the entire stack work without any internet connection meant using self-hosted tools for everything --- Gitea instead of GitHub, a local Jenkins, and an embedded SQLite database.
+\end{itemize}
+
+% ── Future Perspectives ──────────────────────────────────────────────────────
+
+\vspace{0.3cm}
+\noindent\textbf{Future Perspectives.}\quad
+The current system meets all the requirements we defined, but there are several directions it could grow in:
+
+\begin{enumerate}[leftmargin=1.5cm]
+  \item \textbf{More IaC formats}: Adding support for Ansible playbooks, AWS CloudFormation templates, and Pulumi programs would make the system useful in more environments.
+  
+  \item \textbf{Machine learning-based policies}: Analyzing historical violation patterns to automatically suggest new policies tailored to a specific organization's codebase.
+  
+  \item \textbf{AST-based auto-fix}: Moving from regex to Abstract Syntax Tree manipulation would allow more complex and reliable code fixes.
+  
+  \item \textbf{Multi-user authentication}: Adding role-based access control to the dashboard and API would make the system ready for enterprise use.
+  
+  \item \textbf{Git pre-commit hooks}: Adding the scanner as a pre-commit hook would provide yet another enforcement point before code even reaches the repository.
+  
+  \item \textbf{Custom policy editor}: A web interface where security officers can create new policies through a graphical editor, without having to write Python code.
+  
+  \item \textbf{Compliance framework mapping}: Linking each policy to specific CIS, NIST, or SOC~2 controls would make the compliance reports even more valuable.
+\end{enumerate}
+
+% ── Personal Growth ──────────────────────────────────────────────────────────
+
+\vspace{0.3cm}
+\noindent\textbf{Personal and Professional Growth.}\quad
+This project gave me the chance to apply what I learned in class to a real engineering challenge. Building a complete platform from scratch --- from the core scanning engine to the web dashboard to the CI/CD pipeline and monitoring --- required combining skills from software architecture, web development, DevOps, and cybersecurity. Managing all of this through Scrum sprints, making design trade-offs under time pressure, and keeping code quality high with automated tests taught me a lot about what it really means to build production-ready software. It was one of the most rewarding experiences of my academic journey.
+
+% ── Final Word ───────────────────────────────────────────────────────────────
+
+\vspace{0.5cm}
+\noindent This project shows that automated, real-time security enforcement for infrastructure code is not just possible --- it can be fast, thorough, and easy to use. By shifting security left, into the IDE, the dashboard, and the pipeline, we turn security from a bottleneck into a tool that helps teams ship faster \emph{and} safer.

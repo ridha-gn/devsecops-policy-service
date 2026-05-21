@@ -888,9 +888,144 @@
   }
   .fix-tab:hover { border-color: var(--text); color: var(--text); }
   .fix-tab.active { background: rgba(0,255,136,0.1); border-color: var(--green); color: var(--green); }
+
+  /* ── LOGIN OVERLAY ── */
+  #loginOverlay {
+    position: fixed; inset: 0; z-index: 9999;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(8,12,16,0.97); backdrop-filter: blur(20px);
+    transition: opacity 0.3s;
+  }
+  #loginOverlay.hidden { display: none; }
+
+  .login-card {
+    width: 380px;
+    background: rgba(13,17,23,0.95);
+    border: 1px solid rgba(0,229,255,0.2);
+    border-radius: 12px; padding: 40px;
+    position: relative; overflow: hidden;
+    box-shadow: 0 0 80px rgba(0,229,255,0.06), 0 30px 80px rgba(0,0,0,0.6);
+    animation: cardIn 0.4s ease;
+  }
+  @keyframes cardIn { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+
+  .login-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  }
+  .login-logo { text-align: center; margin-bottom: 32px; }
+  .login-logo-icon { width: 52px; height: 52px; margin: 0 auto 14px; }
+  .login-title {
+    font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 4px;
+  }
+  .login-subtitle { font-size: 11px; color: var(--muted); }
+
+  .login-field { margin-bottom: 14px; }
+  .login-field label {
+    display: block; font-size: 10px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 6px;
+  }
+  .login-field input {
+    width: 100%; background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border2); color: #fff;
+    font-family: 'JetBrains Mono', monospace; font-size: 13px;
+    padding: 11px 14px; border-radius: 6px; outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .login-field input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,229,255,0.08); }
+
+  .btn-login {
+    width: 100%; padding: 12px; background: var(--accent); color: #000;
+    border: none; border-radius: 6px; font-family: 'JetBrains Mono', monospace;
+    font-size: 13px; font-weight: 700; cursor: pointer; letter-spacing: 0.05em;
+    transition: all 0.2s; margin-top: 8px;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .btn-login:hover { background: #33ecff; transform: translateY(-1px); }
+  .btn-login:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  .login-error {
+    background: rgba(255,64,96,0.1); border: 1px solid rgba(255,64,96,0.3);
+    color: var(--red); padding: 9px 12px; border-radius: 5px;
+    font-size: 11px; margin-bottom: 14px; display: none; line-height: 1.5;
+  }
+  .login-hint { text-align: center; margin-top: 20px; font-size: 10px; color: var(--muted); line-height: 1.8; }
+  .login-hint code { background: rgba(0,229,255,0.08); color: var(--accent); padding: 1px 5px; border-radius: 3px; }
+
+  /* ── USER PILL & LOGOUT ── */
+  .user-pill {
+    display: flex; align-items: center; gap: 8px; padding: 4px 12px;
+    background: rgba(0,229,255,0.05); border: 1px solid rgba(0,229,255,0.15);
+    border-radius: 4px; font-size: 11px;
+  }
+  .user-role-badge { font-size: 9px; padding: 2px 7px; border-radius: 3px; font-weight: 700; letter-spacing: 0.04em; }
+  .role-DEVELOPER        { background: rgba(0,229,255,0.15); color: var(--accent); }
+  .role-DEVOPS_ENGINEER  { background: rgba(0,255,136,0.12); color: var(--green); }
+  .role-SECURITY_OFFICER { background: rgba(255,140,0,0.15); color: var(--orange); }
+  .role-SUPER_ADMIN      { background: rgba(255,215,0,0.15); color: var(--yellow); }
+
+  .btn-logout {
+    background: transparent; border: 1px solid rgba(255,64,96,0.3);
+    color: rgba(255,64,96,0.7); padding: 4px 10px; border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace; font-size: 10px; cursor: pointer; transition: all 0.15s;
+  }
+  .btn-logout:hover { border-color: var(--red); color: var(--red); background: rgba(255,64,96,0.05); }
+
+  /* ── USERS TABLE ── */
+  .role-chip {
+    display: inline-block; font-size: 9px; padding: 2px 7px;
+    border-radius: 3px; font-weight: 700; letter-spacing: 0.04em;
+  }
+  .btn-danger {
+    background: transparent; border: 1px solid rgba(255,64,96,0.4);
+    color: var(--red); padding: 3px 8px; border-radius: 3px;
+    font-family: 'JetBrains Mono', monospace; font-size: 10px; cursor: pointer; transition: all 0.15s;
+  }
+  .btn-danger:hover { background: rgba(255,64,96,0.1); }
+  .btn-sm-green {
+    background: transparent; border: 1px solid rgba(0,255,136,0.3);
+    color: var(--green); padding: 3px 8px; border-radius: 3px;
+    font-family: 'JetBrains Mono', monospace; font-size: 10px; cursor: pointer; transition: all 0.15s;
+  }
+  .btn-sm-green:hover { background: rgba(0,255,136,0.08); }
 </style>
 </head>
 <body>
+
+<!-- ── LOGIN OVERLAY ── -->
+<div id="loginOverlay">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-logo-icon">
+        <svg viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <polygon points="26,3 49,15 49,37 26,49 3,37 3,15" fill="none" stroke="#00e5ff" stroke-width="2"/>
+          <polygon points="26,13 40,21 40,31 26,39 12,31 12,21" fill="rgba(0,229,255,0.1)" stroke="#00e5ff" stroke-width="1.5"/>
+          <circle cx="26" cy="26" r="6" fill="#00e5ff"/>
+        </svg>
+      </div>
+      <div class="login-title">DEV<span style="color:var(--accent)">SEC</span>OPS</div>
+      <div class="login-subtitle">Policy Engine &mdash; Secure Access Required</div>
+    </div>
+    <div class="login-error" id="loginError"></div>
+    <div class="login-field">
+      <label>Username</label>
+      <input type="text" id="loginUsername" placeholder="Enter your username" autocomplete="username"/>
+    </div>
+    <div class="login-field">
+      <label>Password</label>
+      <input type="password" id="loginPassword" placeholder="Enter your password" autocomplete="current-password"/>
+    </div>
+    <button class="btn-login" id="loginBtn" onclick="doLogin()">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="7" width="10" height="8" rx="1"/><path d="M5 7V5a3 3 0 016 0v2"/>
+      </svg>
+      SIGN IN
+    </button>
+    <div class="login-hint">
+      Secure access required. Contact your administrator for credentials.
+    </div>
+  </div>
+</div>
 
 <div class="layout">
 
@@ -911,7 +1046,12 @@
         <div class="status-dot" id="statusDot"></div>
         <span id="statusText">CONNECTING...</span>
       </div>
+      <div class="user-pill" id="userPill" style="display:none">
+        <span id="userDisplayName" style="color:#fff">—</span>
+        <span class="user-role-badge" id="userRoleBadge">—</span>
+      </div>
       <div class="time-display" id="clockDisplay">--:--:--</div>
+      <button class="btn-logout" id="logoutBtn" onclick="doLogout()" style="display:none">LOGOUT</button>
     </div>
   </header>
 
@@ -919,7 +1059,7 @@
   <nav class="sidebar">
     <div class="nav-section">
       <div class="nav-label">Monitor</div>
-      <div class="nav-item active" onclick="showView('dashboard', this)">
+      <div class="nav-item active" id="navDashboard" onclick="showView('dashboard', this)">
         <svg viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>
         Dashboard
       </div>
@@ -935,10 +1075,15 @@
     </div>
     <div class="nav-section">
       <div class="nav-label">Config</div>
-      <div class="nav-item" onclick="showView('policies', this)">
+      <div class="nav-item" id="navPolicies" onclick="showView('policies', this)">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="1"/><line x1="5" y1="6" x2="11" y2="6"/><line x1="5" y1="9" x2="9" y2="9"/></svg>
         Policies
         <span class="nav-badge">103</span>
+      </div>
+      <div class="nav-item" id="navUsers" onclick="showView('users', this)" style="display:none">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6" cy="5" r="3"/><path d="M1 13c0-2.8 2.2-5 5-5s5 2.2 5 5"/><path d="M12 6l2 2-4 4" stroke-width="1.2"/></svg>
+        Users
+        <span class="nav-badge" id="usersBadge">—</span>
       </div>
     </div>
   </nav>
@@ -1187,11 +1332,189 @@
       <div class="policies-grid" id="policiesGrid"></div>
     </div>
 
+    <!-- ── USERS VIEW ── -->
+    <div class="view" id="view-users">
+      <div class="page-header">
+        <div class="page-title">User Management</div>
+        <div class="page-sub">Create users and assign roles. Role changes take effect on next login.</div>
+      </div>
+      <div class="grid-2" style="align-items:start">
+        <!-- Create user panel (Super Admin only) -->
+        <div class="panel" id="createUserPanel">
+          <div class="panel-header"><div class="panel-title">Create New User</div></div>
+          <div class="panel-body">
+            <div class="form-group">
+              <div class="form-label">Username</div>
+              <input type="text" id="newUsername" placeholder="e.g. john_devops"/>
+            </div>
+            <div class="form-group">
+              <div class="form-label">Password</div>
+              <input type="password" id="newPassword" placeholder="Min. 6 characters"/>
+            </div>
+            <div class="form-group">
+              <div class="form-label">Role</div>
+              <select id="newRole">
+                <option value="DEVELOPER">Developer</option>
+                <option value="DEVOPS_ENGINEER">DevOps Engineer</option>
+                <option value="SECURITY_OFFICER">Security Officer</option>
+                <option value="SUPER_ADMIN">Super Admin</option>
+              </select>
+            </div>
+            <div id="createUserMsg" class="alert"></div>
+            <button class="btn btn-primary" id="createUserBtn" onclick="createUser()">CREATE USER</button>
+          </div>
+        </div>
+        <!-- Users list -->
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">All Users</div>
+            <button class="btn btn-ghost" style="padding:4px 10px;font-size:10px" onclick="loadUsers()">&#x21BB; Refresh</button>
+          </div>
+          <div class="panel-body" style="padding:0">
+            <table class="history-table">
+              <thead><tr><th>#</th><th>Username</th><th>Role</th><th>Created</th><th>Action</th></tr></thead>
+              <tbody id="usersBody">
+                <tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px">Loading...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </main>
 </div>
 
 <script>
-// ── STATE ──
+// ══════════════════════════════════════════════════════════════════════════════
+// AUTH — Token & Session Helpers
+// ══════════════════════════════════════════════════════════════════════════════
+const TOKEN_KEY = 'devsecops_token';
+const USER_KEY  = 'devsecops_user';
+
+function getToken() { return localStorage.getItem(TOKEN_KEY); }
+function getUser()  { try { return JSON.parse(localStorage.getItem(USER_KEY) || 'null'); } catch { return null; } }
+function setAuth(token, user) { localStorage.setItem(TOKEN_KEY, token); localStorage.setItem(USER_KEY, JSON.stringify(user)); }
+function clearAuth() { localStorage.removeItem(TOKEN_KEY); localStorage.removeItem(USER_KEY); }
+
+// Fetch wrapper — injects Bearer token automatically
+async function authFetch(url, options = {}) {
+  const token = getToken();
+  const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const resp = await fetch(url, { ...options, headers });
+  if (resp.status === 401) { clearAuth(); showLoginOverlay(); throw new Error('Session expired. Please log in again.'); }
+  return resp;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// AUTH — Login / Logout
+// ══════════════════════════════════════════════════════════════════════════════
+async function doLogin() {
+  const username = document.getElementById('loginUsername').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const errEl    = document.getElementById('loginError');
+  const btn      = document.getElementById('loginBtn');
+  errEl.style.display = 'none';
+  if (!username || !password) { errEl.textContent = 'Please enter username and password.'; errEl.style.display = 'block'; return; }
+  btn.disabled = true;
+  btn.innerHTML = '<div class="loading"></div> SIGNING IN...';
+  try {
+    const resp = await fetch('/auth/login', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    const data = await resp.json();
+    if (!resp.ok) { errEl.textContent = data.detail || 'Login failed.'; errEl.style.display = 'block'; return; }
+    setAuth(data.access_token, { username: data.username, role: data.role });
+    hideLoginOverlay();
+    applyRoleUI();
+    checkHealth();
+    loadMetrics();
+  } catch (e) {
+    errEl.textContent = 'Connection error: ' + e.message; errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="10" height="8" rx="1"/><path d="M5 7V5a3 3 0 016 0v2"/></svg> SIGN IN';
+  }
+}
+
+function doLogout() {
+  clearAuth();
+  document.getElementById('userPill').style.display = 'none';
+  document.getElementById('logoutBtn').style.display = 'none';
+  document.getElementById('statusDot').classList.add('offline');
+  document.getElementById('statusText').textContent = 'LOGGED OUT';
+  showLoginOverlay();
+}
+
+function showLoginOverlay() { document.getElementById('loginOverlay').classList.remove('hidden'); }
+function hideLoginOverlay() { document.getElementById('loginOverlay').classList.add('hidden'); }
+
+// Enter key on login inputs
+document.getElementById('loginPassword').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+document.getElementById('loginUsername').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ROLE UI — Show/hide elements based on user role
+// ══════════════════════════════════════════════════════════════════════════════
+const ROLE_LABELS = {
+  DEVELOPER:        'Developer',
+  DEVOPS_ENGINEER:  'DevOps Engineer',
+  SECURITY_OFFICER: 'Security Officer',
+  SUPER_ADMIN:      'Super Admin',
+};
+
+function applyRoleUI() {
+  const user = getUser();
+  if (!user) return;
+  const role = user.role;
+
+  document.getElementById('userDisplayName').textContent = user.username;
+  const badge = document.getElementById('userRoleBadge');
+  badge.textContent = ROLE_LABELS[role] || role;
+  badge.className = `user-role-badge role-${role}`;
+  document.getElementById('userPill').style.display = 'flex';
+  document.getElementById('logoutBtn').style.display = 'block';
+
+  const isDeveloper  = role === 'DEVELOPER';
+  const isDevOpsPlus = ['DEVOPS_ENGINEER','SECURITY_OFFICER','SUPER_ADMIN'].includes(role);
+  const isSecPlus    = ['SECURITY_OFFICER','SUPER_ADMIN'].includes(role);
+  const isAdmin      = role === 'SUPER_ADMIN';
+
+  // Dashboard nav — visible for DevOps+ only, hidden for Developer
+  const navDashboard = document.getElementById('navDashboard');
+  if (navDashboard) navDashboard.style.display = isDeveloper ? 'none' : 'flex';
+
+  // Auto-fix button — DevOps+ only
+  const fixBtn = document.getElementById('fixBtn');
+  if (fixBtn) fixBtn.style.display = isDevOpsPlus ? 'inline-flex' : 'none';
+
+  // Policies nav — Security Officer + Super Admin only
+  const navPolicies = document.getElementById('navPolicies');
+  if (navPolicies) navPolicies.style.display = isSecPlus ? 'flex' : 'none';
+
+  // Users nav item — Security Officer + Super Admin
+  const navUsers = document.getElementById('navUsers');
+  if (navUsers) navUsers.style.display = isSecPlus ? 'flex' : 'none';
+
+  // Create user panel — Admin only
+  const cup = document.getElementById('createUserPanel');
+  if (cup) cup.style.display = isAdmin ? 'block' : 'none';
+
+  // Developer lands on Scan Code (no Dashboard access)
+  if (isDeveloper) {
+    const scanNavEl = document.querySelector('.nav-item[onclick*="scan"]');
+    showView('scan', scanNavEl);
+  }
+
+  window._canPDF   = isDevOpsPlus;
+  window._userRole = role;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════════════════════════
 let scanHistory = [];
 let currentThreshold = 'LOW';
 const API = '';  // same origin
@@ -1352,6 +1675,7 @@ function showView(name, el) {
   if (el) el.classList.add('active');
   if (name === 'policies') renderPolicies('ALL');
   if (name === 'history') renderHistory();
+  if (name === 'users') loadUsers();
 }
 
 // ── HEALTH CHECK ──
@@ -1376,7 +1700,7 @@ async function checkHealth() {
 // ── METRICS ──
 async function loadMetrics() {
   try {
-    const r = await fetch('/metrics');
+    const r = await authFetch('/metrics');
     const d = await r.json();
 
     document.getElementById('statTotal').textContent  = d.total_requests ?? 0;
@@ -1578,9 +1902,8 @@ async function runScan() {
 
   const startTime = Date.now();
   try {
-    const resp = await fetch('/analyze', {
+    const resp = await authFetch('/analyze', {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({
         content,
         code_type: codeType,
@@ -1678,9 +2001,8 @@ async function runAutoFix() {
   btn.innerHTML = '<div class="loading"></div> FIXING...';
 
   try {
-    const resp = await fetch('/fix', {
+    const resp = await authFetch('/fix', {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ content, code_type: codeType })
     });
     if (!resp.ok) {
@@ -1784,7 +2106,7 @@ function downloadPDF() {
 async function updateRecentScans() {
   const tbody = document.getElementById('recentScansBody');
   try {
-    const r = await fetch('/history?limit=5');
+    const r = await authFetch('/history?limit=5');
     const data = await r.json();
     if (!data.length) {
       tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No scans yet</td></tr>';
@@ -1808,7 +2130,7 @@ async function updateRecentScans() {
 async function renderHistory() {
   const tbody = document.getElementById('historyBody');
   try {
-    const r = await fetch('/history?limit=50');
+    const r = await authFetch('/history?limit=50');
     const data = await r.json();
     if (!data.length) {
       tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px;">No scan history yet</td></tr>';
@@ -1864,10 +2186,87 @@ function renderPolicies(filter) {
     </div>`).join('');
 }
 
-// ── INIT ──
-checkHealth();
-setInterval(() => { checkHealth(); loadMetrics(); }, 10000);
-renderPolicies('ALL');
+// ══════════════════════════════════════════════════════════════════════════════
+// USER MANAGEMENT (Admin panel)
+// ══════════════════════════════════════════════════════════════════════════════
+async function createUser() {
+  const username = document.getElementById('newUsername').value.trim();
+  const password = document.getElementById('newPassword').value;
+  const role     = document.getElementById('newRole').value;
+  const msg      = document.getElementById('createUserMsg');
+  msg.className = 'alert'; msg.style.display = 'none';
+
+  if (!username || !password) { msg.textContent = 'Please fill all fields.'; msg.className = 'alert error'; msg.style.display = 'block'; return; }
+  if (password.length < 6)   { msg.textContent = 'Password must be at least 6 characters.'; msg.className = 'alert error'; msg.style.display = 'block'; return; }
+
+  try {
+    const resp = await authFetch('/users', {
+      method: 'POST',
+      body: JSON.stringify({ username, password, role })
+    });
+    const data = await resp.json();
+    if (!resp.ok) { msg.textContent = data.detail || 'Error creating user.'; msg.className = 'alert error'; msg.style.display = 'block'; return; }
+    msg.textContent = `User "${data.username}" created with role ${data.role}.`;
+    msg.className = 'alert success'; msg.style.display = 'block';
+    document.getElementById('newUsername').value = '';
+    document.getElementById('newPassword').value = '';
+    loadUsers();
+  } catch (e) {
+    msg.textContent = 'Error: ' + e.message; msg.className = 'alert error'; msg.style.display = 'block';
+  }
+}
+
+async function loadUsers() {
+  const tbody = document.getElementById('usersBody');
+  try {
+    const resp = await authFetch('/users');
+    if (resp.status === 403) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px">Access denied</td></tr>'; return; }
+    const users = await resp.json();
+    document.getElementById('usersBadge').textContent = users.length;
+    const isAdmin = window._userRole === 'SUPER_ADMIN';
+    tbody.innerHTML = users.map(u => `
+      <tr>
+        <td style="color:var(--muted)">#${u.id}</td>
+        <td style="color:#fff;font-weight:600">${u.username}</td>
+        <td><span class="role-chip role-${u.role}">${ROLE_LABELS[u.role] || u.role}</span></td>
+        <td style="color:var(--muted)">${u.created_at}</td>
+        <td>
+          ${u.username === 'admin' ? '<span style="color:var(--muted);font-size:10px">protected</span>' :
+            isAdmin ? `<button class="btn-danger" onclick="deleteUser(${u.id},'${u.username}')">Delete</button>` :
+            '<span style="color:var(--muted);font-size:10px">—</span>'}
+        </td>
+      </tr>`).join('');
+  } catch (e) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px">Error loading users</td></tr>';
+  }
+}
+
+async function deleteUser(id, username) {
+  if (!confirm(`Delete user "${username}"? This cannot be undone.`)) return;
+  try {
+    const resp = await authFetch(`/users/${id}`, { method: 'DELETE' });
+    if (!resp.ok) { const d = await resp.json(); alert(d.detail || 'Error'); return; }
+    loadUsers();
+  } catch (e) { alert('Error: ' + e.message); }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// INIT — Check token on load, or show login
+// ══════════════════════════════════════════════════════════════════════════════
+(function init() {
+  const token = getToken();
+  const user  = getUser();
+  if (token && user) {
+    hideLoginOverlay();
+    applyRoleUI();
+    checkHealth();
+    loadMetrics();
+  } else {
+    showLoginOverlay();
+  }
+  setInterval(() => { if (getToken()) { checkHealth(); loadMetrics(); } }, 10000);
+  renderPolicies('ALL');
+})();
 </script>
 </body>
 </html>

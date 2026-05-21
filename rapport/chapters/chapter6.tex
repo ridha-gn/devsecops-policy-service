@@ -1,0 +1,303 @@
+% ============================================================================
+%  Chapter 6 — Sprint 3: Dashboard, Auto-Fix, and Reports
+% ============================================================================
+
+\chapter{Sprint 3: Dashboard, Auto-Fix Engine, and Reports}
+\label{chap:sprint3}
+
+\section{Introduction}
+
+The third sprint was about building everything the user actually sees and interacts with. We created the web dashboard, developed the auto-fix engine that can fix vulnerabilities with one click, added HTML and PDF compliance reports, and set up scan history storage with SQLite. After this sprint, the microservice went from being just a backend API to a complete security platform where developers can scan, understand, fix, and document their infrastructure issues --- all from the browser.
+
+
+\section{Sprint Objectives}
+
+\begin{enumerate}[leftmargin=1.5cm]
+  \item Build a single-page web dashboard for interactive code scanning.
+  \item Implement the auto-fix engine to fix 15+ vulnerability types across all three formats.
+  \item Create the \texttt{POST /fix} endpoint that returns corrected code with a git-style diff.
+  \item Implement HTML and PDF compliance report generation.
+  \item Add scan history storage using SQLite.
+  \item Integrate auto-fix into the dashboard with a diff view and automatic editor update.
+\end{enumerate}
+
+
+\section{Sprint Backlog}
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{|c|X|c|c|}
+\hline
+\textbf{ID} & \textbf{Task} & \textbf{Story} & \textbf{Status} \\
+\hline
+T-23 & Build the web dashboard (HTML/CSS/JavaScript single-page application). & US-12 & Done \\
+\hline
+T-24 & Implement code editor with syntax highlighting and file type selector. & US-12 & Done \\
+\hline
+T-25 & Implement scan results panel with severity indicators and recommendations. & US-12 & Done \\
+\hline
+T-26 & Implement 8 Terraform auto-fix functions. & US-13 & Done \\
+\hline
+T-27 & Implement 3 Dockerfile auto-fix functions. & US-13 & Done \\
+\hline
+T-28 & Implement 4 Kubernetes auto-fix functions. & US-13 & Done \\
+\hline
+T-29 & Create \texttt{POST /fix} endpoint and Pydantic schemas. & US-13 & Done \\
+\hline
+T-30 & Implement diff generation using Python's \texttt{difflib}. & US-13 & Done \\
+\hline
+T-31 & Add auto-fix button and diff view to the dashboard. & US-13 & Done \\
+\hline
+T-32 & Implement HTML report generator with \texttt{/report/\{filename\}}. & US-14 & Done \\
+\hline
+T-33 & Implement PDF report export with \texttt{xhtml2pdf}. & US-14 & Done \\
+\hline
+T-34 & Implement SQLite scan history with \texttt{/history} endpoint. & US-15 & Done \\
+\hline
+T-35 & Add metrics endpoint (\texttt{/metrics}) returning JSON statistics. & US-15 & Done \\
+\hline
+\end{tabularx}
+\caption{Sprint 3 backlog.}
+\label{tab:s3-backlog}
+\end{table}
+
+
+\section{Use Case Refinement}
+
+\subsection{Use Case: Auto-Fix Violations}
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+\textbf{Use Case} & Auto-Fix Violations \\
+\hline
+\textbf{Actor} & DevOps Engineer \\
+\hline
+\textbf{Precondition} & The actor has scanned code and received a BLOCK decision with fixable violations. \\
+\hline
+\textbf{Postcondition} & The dashboard shows the corrected code and a diff view; the editor is updated with the fixed version. \\
+\hline
+\textbf{Nominal Scenario} &
+  \begin{enumerate}[leftmargin=0.8cm, nosep]
+    \item The actor clicks the ``Auto-Fix'' button on the dashboard.
+    \item The dashboard sends a POST request to \texttt{/fix} with the current code and type.
+    \item The auto-fix engine goes through all applicable fix functions one by one.
+    \item Each fix function uses regex-based transformations to correct the issue.
+    \item The engine creates a unified diff between the original and fixed code.
+    \item The API returns the fixed code, the list of fixes applied, and the diff.
+    \item The dashboard shows a split diff view (original vs.\ fixed).
+    \item The editor content is automatically replaced with the fixed code.
+    \item The actor clicks ``Scan'' again to verify that the fix worked.
+  \end{enumerate} \\
+\hline
+\textbf{Alternative} &
+  \begin{itemize}[leftmargin=0.8cm, nosep]
+    \item[A1.] If no fixes apply, the API returns \texttt{total\_fixes: 0}.
+  \end{itemize} \\
+\hline
+\end{tabularx}
+\caption{Textual description --- ``Auto-Fix Violations'' use case.}
+\label{tab:uc-fix}
+\end{table}
+
+
+\section{Sequence Diagram}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    participant/.style = {
+        draw, thick, rectangle, rounded corners=2pt,
+        minimum width=1.8cm, minimum height=0.6cm,
+        align=center, font=\scriptsize\bfseries,
+        fill=#1
+    },
+    msg/.style = {-{Stealth[length=4pt]}, thick},
+    ret/.style = {-{Stealth[length=4pt]}, thick, dashed}
+]
+
+% Participants
+\node[participant=cyan!15] (dash) at (0, 0) {Dashboard};
+\node[participant=blue!15] (api) at (3.5, 0) {API};
+\node[participant=purple!15] (fixer) at (7, 0) {AutoFixer};
+\node[participant=orange!15] (diff) at (10.5, 0) {DiffGen};
+
+% Lifelines
+\foreach \n in {dash, api, fixer, diff}
+    \draw[dashed, thin, gray] (\n.south) -- ++(0, -7.5);
+
+% Messages
+\draw[msg] (0, -1) -- node[above, font=\tiny] {POST /fix \{code, type\}} (3.5, -1);
+\draw[msg] (3.5, -1.8) -- node[above, font=\tiny] {fix(code\_type, content)} (7, -1.8);
+
+% Loop
+\draw[thick, rounded corners=2pt] (5.8, -2.3) rectangle (8.5, -3.5);
+\node[font=\tiny, anchor=north west] at (5.9, -2.35) {loop [each fixer fn]};
+\node[font=\tiny] at (7.15, -2.85) {fixer\_fn(code, fixes)};
+\node[font=\tiny, color=green!60!black] at (7.15, -3.25) {regex transform};
+
+\draw[msg] (7, -4) -- node[above, font=\tiny] {generate\_diff(original, fixed)} (10.5, -4);
+\draw[ret] (10.5, -4.6) -- node[above, font=\tiny] {unified diff} (7, -4.6);
+
+\draw[ret] (7, -5.3) -- node[above, font=\tiny] {FixResult} (3.5, -5.3);
+\draw[ret] (3.5, -5.9) -- node[above, font=\tiny] {FixResponse (JSON)} (0, -5.9);
+
+% Dashboard update
+\draw[msg, color=green!60!black] (0, -6.5) -- ++(0.5,0) node[right, font=\tiny] {update editor + show diff};
+
+\end{tikzpicture}
+\caption{Sprint 3 sequence diagram: the auto-fix workflow from dashboard request to code correction.}
+\label{fig:s3-sequence}
+\end{figure}
+
+
+\section{Realization}
+
+\subsection{Auto-Fix Engine Architecture}
+
+The auto-fix engine (\texttt{engine/auto\_fix.py}) is built around three lists of fixer functions --- one for each supported format. Each function takes the current code and a mutable list of fix records, applies a regex transformation, and returns the updated code.
+
+\begin{lstlisting}[language=Python, caption={AutoFixer class architecture (excerpt).}, label={lst:autofixer}]
+TERRAFORM_FIXERS = [
+    _fix_public_s3_acl,       _fix_public_database,
+    _fix_unencrypted_storage, _fix_hardcoded_secrets,
+    _fix_security_group,      _fix_ec2_imdsv1,
+    _fix_ec2_public_ip,       _fix_rds_deletion_protection,
+]
+DOCKERFILE_FIXERS = [
+    _fix_docker_root_user, _fix_docker_latest_tag, _fix_docker_healthcheck,
+]
+KUBERNETES_FIXERS = [
+    _fix_k8s_privileged,      _fix_k8s_host_network,
+    _fix_k8s_privilege_escalation, _fix_k8s_run_as_root,
+]
+
+class AutoFixer:
+    def fix(self, code_type, content):
+        fixes = []
+        fixed_code = content
+        fixers = TERRAFORM_FIXERS if code_type == "terraform" else ...
+        for fixer_fn in fixers:
+            fixed_code = fixer_fn(fixed_code, fixes)
+        return FixResult(original_code=content, fixed_code=fixed_code,
+                         fixes_applied=fixes, total_fixes=len(fixes))
+\end{lstlisting}
+
+\subsection{Fix Function Examples}
+
+\subsubsection{Terraform: Public S3 to Private}
+
+\begin{lstlisting}[language=Python, caption={Public S3 ACL fix function.}, label={lst:fix-s3}]
+def _fix_public_s3_acl(code, fixes):
+    pattern = r'(acl\s*=\s*["\''])(public-read-write|public-read)(["\''])'
+    for m in re.finditer(pattern, code):
+        fixes.append(FixApplied(
+            rule_id="PUBLIC_S3_BUCKET",
+            line_number=code[:m.start()].count('\n') + 1,
+            description=f"Changed ACL from '{m.group(2)}' to 'private'",
+            original=m.group(0),
+            fixed=f'{m.group(1)}private{m.group(3)}'
+        ))
+    return re.sub(pattern, r'\1private\3', code)
+\end{lstlisting}
+
+\subsubsection{Terraform: Hardcoded Secrets to Variable References}
+
+This fix replaces hardcoded AWS access keys, passwords, and secret keys with Terraform variable references (\texttt{\$\{var.aws\_access\_key\}}), making sure that sensitive values are never stored in plain text.
+
+\subsubsection{Dockerfile: Adding Non-Root User}
+
+The Docker root user fix adds \texttt{RUN useradd -m -u 1000 appuser} and \texttt{USER appuser} before the \texttt{CMD} or \texttt{ENTRYPOINT} directive, so the container runs with minimum privileges.
+
+\subsubsection{Kubernetes: Disabling Privileged Mode}
+
+The Kubernetes privileged fix does a simple substitution: \texttt{privileged: true} $\rightarrow$ \texttt{privileged: false}.
+
+\subsection{Diff Generation}
+
+The auto-fix engine creates a unified diff using Python's \texttt{difflib} module. The output follows the standard git diff format that developers are already familiar with:
+
+\begin{lstlisting}[language=Python, caption={Diff generation method.}, label={lst:diff-gen}]
+def generate_diff(self, original, fixed):
+    import difflib
+    return '\n'.join(difflib.unified_diff(
+        original.splitlines(), fixed.splitlines(),
+        fromfile='original', tofile='fixed', lineterm=''
+    ))
+\end{lstlisting}
+
+\subsection{Web Dashboard}
+
+The dashboard is a single-page HTML application (\texttt{dashboard.html}, about 70\,KB) with embedded CSS and JavaScript. It communicates with the backend through fetch API calls to the REST endpoints.
+
+The main features of the dashboard are:
+
+\begin{itemize}[leftmargin=1.5cm]
+  \item \textbf{Code editor}: A text area with monospace font and a dropdown to select the file type (Terraform, Dockerfile, Kubernetes).
+  \item \textbf{Severity threshold selector}: A dropdown to choose between LOW, MEDIUM, HIGH, or CRITICAL thresholds.
+  \item \textbf{Results panel}: Shows violations grouped by severity with colored badges (red for CRITICAL, orange for HIGH, yellow for MEDIUM, blue for LOW).
+  \item \textbf{Auto-fix button}: Sends the code to \texttt{POST /fix}, shows a side-by-side diff, and updates the editor with the fixed code.
+  \item \textbf{Report download}: Links to \texttt{/report/\{filename\}} for HTML and \texttt{/report/\{filename\}/pdf} for PDF exports.
+  \item \textbf{Scan history}: A table showing past scans pulled from \texttt{/history}.
+  \item \textbf{Metrics panel}: Real-time stats like total scans, block rate, and top violations.
+\end{itemize}
+
+\figplaceholder{Dashboard --- main interface}{dashboard_main}
+\figplaceholder{Dashboard --- BLOCK result with violations}{dashboard_block}
+\figplaceholder{Dashboard --- Auto-Fix diff view}{dashboard_autofix_diff}
+\figplaceholder{Dashboard --- scan history table}{dashboard_history}
+
+\subsection{Compliance Reports}
+
+The \texttt{/report/\{filename\}} endpoint generates a styled HTML report with:
+
+\begin{itemize}[leftmargin=1.5cm]
+  \item A header with the filename, code type, scan timestamp, and decision.
+  \item Summary statistics showing the total violations and severity breakdown.
+  \item A detailed violation table with rule ID, severity, message, line number, and recommendation.
+  \item The \texttt{/report/\{filename\}/pdf} variant converts the HTML to PDF using \texttt{xhtml2pdf}.
+\end{itemize}
+
+\figplaceholder{HTML compliance report}{html_report}
+
+\subsection{SQLite Scan History}
+
+Scan results are saved in an embedded SQLite database. Each record stores the filename, code type, decision, violation count, scan duration, block threshold, and the full violations in JSON format. The \texttt{/history} endpoint returns the most recent scans (default limit is 50).
+
+
+\section{Tests}
+
+Sprint~3 added four new tests for the auto-fix and metrics features:
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{|l|X|c|}
+\hline
+\textbf{Test} & \textbf{Description} & \textbf{Result} \\
+\hline
+\texttt{test\_fix\_endpoint}          & Public S3 is fixed to private; checks that \texttt{total\_fixes > 0}. & Pass \\
+\hline
+\texttt{test\_fix\_no\_changes}       & Already-secure code returns \texttt{total\_fixes: 0}. & Pass \\
+\hline
+\texttt{test\_prometheus\_metrics}    & \texttt{/metrics/prometheus} contains expected metric names. & Pass \\
+\hline
+\texttt{test\_metrics\_json}          & \texttt{/metrics} returns JSON with \texttt{total\_requests}. & Pass \\
+\hline
+\end{tabularx}
+\caption{Sprint 3 new test cases.}
+\label{tab:s3-tests}
+\end{table}
+
+
+\section{Interfaces}
+
+\figplaceholder{Dashboard --- full scan workflow}{dashboard_scan_result}
+\figplaceholder{Auto-Fix before and after}{dashboard_autofix_diff}
+\figplaceholder{Generated HTML compliance report}{html_report}
+\figplaceholder{Scan history panel}{dashboard_history}
+
+
+\section{Conclusion}
+
+Sprint~3 delivered everything the user needs to interact with the platform. The auto-fix engine, which can fix 15+ vulnerability types with one click, closes the loop between finding a problem and solving it. The web dashboard gives developers an easy way to scan code, and the compliance reports provide downloadable documentation for audits. With the backend, policies, dashboard, and fixing all in place, the final sprint focuses on external integrations: CI/CD, IDE scanning, and monitoring.

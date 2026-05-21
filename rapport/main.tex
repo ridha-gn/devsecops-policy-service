@@ -1,0 +1,243 @@
+% ============================================================================
+%  PFE Report — DevSecOps Policy-as-Code Microservice
+%  Author: Ridha Gnounou
+%  University: ISITCOM Hammam Sousse
+%  Academic Year: 2025–2026
+% ============================================================================
+
+\documentclass[12pt, a4paper, oneside]{report}
+
+% ── Encoding & Language ──────────────────────────────────────────────────────
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+\usepackage{acronym}
+
+% ── Page Layout ──────────────────────────────────────────────────────────────
+\usepackage[
+  top=2.5cm,
+  bottom=2.5cm,
+  left=3cm,
+  right=2.5cm
+]{geometry}
+\usepackage{setspace}
+\onehalfspacing
+
+% ── Typography ───────────────────────────────────────────────────────────────
+\usepackage{lmodern}
+\usepackage{microtype}
+
+% ── Graphics & Figures ───────────────────────────────────────────────────────
+\usepackage{graphicx}
+\graphicspath{{images/}{figures/}}
+\usepackage{float}
+\usepackage{subcaption}
+\usepackage[export]{adjustbox}
+
+% ── TikZ (for inline diagrams) ───────────────────────────────────────────────
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, decorations.pathmorphing, calc}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+
+% ── Conditionals ─────────────────────────────────────────────────────────────
+\usepackage{ifthen}
+
+% ── Tables ───────────────────────────────────────────────────────────────────
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{multirow}
+\usepackage{array}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+
+% ── Code Listings ────────────────────────────────────────────────────────────
+\usepackage{listings}
+\usepackage{xcolor}
+
+\definecolor{codebg}{HTML}{F8F8F8}
+\definecolor{codeframe}{HTML}{CCCCCC}
+\definecolor{codekw}{HTML}{0000FF}
+\definecolor{codecomment}{HTML}{008000}
+\definecolor{codestring}{HTML}{A31515}
+\definecolor{codenum}{HTML}{098658}
+
+\lstdefinestyle{mystyle}{
+  backgroundcolor=\color{codebg},
+  frame=single,
+  rulecolor=\color{codeframe},
+  basicstyle=\ttfamily\footnotesize,
+  keywordstyle=\color{codekw}\bfseries,
+  commentstyle=\color{codecomment}\itshape,
+  stringstyle=\color{codestring},
+  numberstyle=\tiny\color{codenum},
+  numbers=left,
+  numbersep=8pt,
+  breaklines=true,
+  breakatwhitespace=false,
+  tabsize=4,
+  showstringspaces=false,
+  captionpos=b,
+  aboveskip=10pt,
+  belowskip=10pt,
+}
+\lstset{style=mystyle}
+
+\lstdefinelanguage{terraform}{
+  keywords={resource, variable, provider, output, data, module, locals, terraform},
+  sensitive=true,
+  morecomment=[l]{\#},
+  morecomment=[s]{/*}{*/},
+  morestring=[b]",
+}
+
+\lstdefinelanguage{dockerfile}{
+  keywords={FROM, RUN, CMD, ENTRYPOINT, COPY, ADD, EXPOSE, ENV, WORKDIR, USER, HEALTHCHECK, LABEL, ARG, VOLUME},
+  sensitive=true,
+  morecomment=[l]{\#},
+}
+
+% ── Hyperlinks & PDF Metadata ────────────────────────────────────────────────
+\usepackage[
+  colorlinks=true,
+  linkcolor=blue!60!black,
+  citecolor=green!50!black,
+  urlcolor=blue!70!black,
+  bookmarks=true,
+  bookmarksnumbered=true,
+  pdfauthor={Ridha Gnounou},
+  pdftitle={DevSecOps Policy-as-Code Microservice for Infrastructure Security},
+  pdfsubject={PFE Report — ISITCOM Hammam Sousse},
+]{hyperref}
+
+% ── Bibliography ─────────────────────────────────────────────────────────────
+\usepackage[numbers,sort&compress]{natbib}
+
+% ── Miscellaneous ────────────────────────────────────────────────────────────
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{caption}
+\usepackage{amsmath}
+\usepackage{pdfpages}
+\usepackage{appendix}
+\usepackage{needspace}
+
+% ── Header / Footer ─────────────────────────────────────────────────────────
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\nouppercase{\leftmark}}
+\fancyhead[R]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\fancypagestyle{plain}{%
+  \fancyhf{}
+  \fancyfoot[C]{\thepage}
+  \renewcommand{\headrulewidth}{0pt}
+}
+
+% ── Chapter Title Formatting ─────────────────────────────────────────────────
+\titleformat{\chapter}[display]
+  {\normalfont\huge\bfseries}
+  {\chaptertitlename\ \thechapter}{20pt}{\Huge}
+\titlespacing*{\chapter}{0pt}{-20pt}{40pt}
+
+% ── Caption Styling ──────────────────────────────────────────────────────────
+\captionsetup{
+  font=small,
+  labelfont=bf,
+  format=hang,
+  margin=10pt,
+}
+
+% ── Custom Commands ──────────────────────────────────────────────────────────
+% figplaceholder{caption}{filename-without-ext}
+% Usage: \figplaceholder{Caption text}{filename}
+% If images/filename.png exists it will be included, otherwise shows a placeholder box.
+\newcommand{\figplaceholder}[2]{%
+  \IfFileExists{images/#2.png}{%
+    \begin{figure}[H]
+      \centering
+      \includegraphics[width=0.92\textwidth]{images/#2.png}
+      \caption{#1}
+      \label{fig:#2}
+    \end{figure}
+  }{%
+    \IfFileExists{images/#2.jpg}{%
+      \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.92\textwidth]{images/#2.jpg}
+        \caption{#1}
+        \label{fig:#2}
+      \end{figure}
+    }{%
+      \begin{figure}[H]
+        \centering
+        \fbox{\parbox{0.85\textwidth}{\centering\vspace{1.5cm}%
+          \textbf{[ Screenshot needed: #2.png ]}\\[0.3cm]%
+          #1\vspace{1.5cm}}}
+        \caption{#1}
+        \label{fig:#2}
+      \end{figure}
+    }%
+  }%
+}
+
+% ============================================================================
+%  DOCUMENT BEGIN
+% ============================================================================
+\begin{document}
+
+% ── Front Matter ─────────────────────────────────────────────────────────────
+\pagenumbering{roman}
+
+\input{front/titlepage}
+\newpage
+
+\input{front/dedication}
+\newpage
+
+\input{front/acknowledgments}
+\newpage
+
+\tableofcontents
+\newpage
+
+\listoffigures
+\newpage
+
+\listoftables
+\newpage
+
+\input{front/acronyms}
+\newpage
+
+% ── General Introduction ─────────────────────────────────────────────────────
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+\input{front/introduction}
+
+% ── Main Chapters ────────────────────────────────────────────────────────────
+\input{chapters/chapter1}
+\input{chapters/chapter2}
+\input{chapters/chapter3}
+\input{chapters/chapter4}
+\input{chapters/chapter5}
+\input{chapters/chapter6}
+\input{chapters/chapter7}
+
+% ── General Conclusion ───────────────────────────────────────────────────────
+\input{back/conclusion}
+
+% ── Bibliography ─────────────────────────────────────────────────────────────
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+% ── Abstract (at the end, standard for French universities) ──────────────────
+\newpage
+\pagestyle{empty}
+\input{front/abstract}
+% \end{appendices}
+
+\end{document}

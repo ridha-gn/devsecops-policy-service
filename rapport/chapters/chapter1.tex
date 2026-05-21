@@ -1,0 +1,173 @@
+% ============================================================================
+%  Chapter 1 — General Context of the Project
+% ============================================================================
+
+\chapter{General Context of the Project}
+\label{chap:context}
+
+\section{Introduction}
+
+This chapter sets the stage for the project. We start by presenting the host institution where this work was carried out. Then we look at the problem we are trying to solve and why existing approaches fall short. After that, we present our proposed solution and describe the Scrum methodology we followed throughout the project.
+
+
+% ────────────────────────────────────────────────────────────────────────────
+\section{Presentation of the Host Institution}
+\label{sec:isitcom}
+
+This project was carried out entirely at the \textbf{Higher Institute of Computer Science and Communication Technologies (ISITCOM)}, located in Hammam Sousse, Tunisia. ISITCOM is a public higher education institution that belongs to the University of Sousse.
+
+The institute was created to meet the growing need for skilled professionals in telecommunications and information technology. It offers undergraduate and graduate programs in computer science, networking, multimedia, and telecommunications engineering.
+
+ISITCOM provides its students with a solid academic foundation combined with practical, hands-on experience through labs and industry-oriented final year projects. The telecommunications and computer science program, in which this project falls, covers areas like software engineering, network administration, cybersecurity, and cloud computing --- all of which are directly related to the DevSecOps domain addressed by this project.
+
+Since this project does not involve an external company, ISITCOM served as both the academic institution and the host environment for the development and testing of the solution.
+
+% Placeholder for ISITCOM logo or campus photo
+\figplaceholder{ISITCOM Hammam Sousse}{isitcom_logo}
+
+
+% ────────────────────────────────────────────────────────────────────────────
+\section{Problem Statement}
+\label{sec:problem}
+
+Cloud computing has changed the way organizations build and manage their IT infrastructure. Tools like HashiCorp Terraform, Docker, and Kubernetes have become the standard way to define and deploy cloud resources~\cite{morris2020iac}. Instead of setting things up manually, teams now write configuration files that describe what they need, and the tools take care of the rest. This approach, known as Infrastructure as Code (IaC), lets teams version, review, and automate their infrastructure just like they do with regular application code.
+
+But this shift has created a serious security problem. A mistake in an IaC file --- like an S3 bucket open to the public, a database without encryption, or a container running as root --- can quietly pass through automated pipelines and end up in production without anyone catching it. Studies show that cloud misconfigurations are one of the top causes of data breaches, often resulting from simple oversights that a tool could have detected automatically~\cite{aws2024wellarchitected, cis2024benchmarks}.
+
+The traditional way of handling security --- where a dedicated team manually reviews infrastructure before deployment --- has three main problems:
+
+\begin{enumerate}[leftmargin=1.5cm]
+  \item \textbf{It is too slow}: Reviews happen late in the process, sometimes days or weeks after the code was written. By then, fixing issues is expensive and complicated.
+  
+  \item \textbf{It does not scale}: As the amount of infrastructure code grows, manual reviews become a bottleneck. Teams either slow down their delivery or skip the reviews entirely when deadlines are tight.
+  
+  \item \textbf{It is inconsistent}: Different reviewers apply policies differently, which leads to gaps in coverage and disagreements about what counts as a violation.
+\end{enumerate}
+
+These limitations make a strong case for an automated, policy-driven approach that checks security directly inside the development workflow --- a concept known as \emph{shift-left security}~\cite{mohan2016shiftleft}.
+
+
+% ────────────────────────────────────────────────────────────────────────────
+\section{Proposed Solution}
+\label{sec:solution}
+
+To solve these problems, this project proposes a \textbf{DevSecOps Policy-as-Code microservice}: a complete, ready-to-use system that automatically analyzes infrastructure code against a library of security policies and gives clear, actionable results in real time.
+
+The solution is built around these core ideas:
+
+\begin{itemize}[leftmargin=1.5cm]
+  \item \textbf{Multi-format support}: The system handles Terraform (HCL), Dockerfile, and Kubernetes YAML --- the three most common IaC formats.
+  
+  \item \textbf{Wide coverage}: 103~security policies organized across 15~categories, aligned with CIS benchmarks and AWS best practices, make sure nothing important is missed.
+  
+  \item \textbf{Shift-left integration}: A Visual Studio Code extension scans files in real time as the developer writes code, catching issues before they even reach version control.
+  
+  \item \textbf{Automatic fixing}: An auto-fix engine corrects 15+ common vulnerability types with one click, cutting the time between finding and fixing a problem down to seconds.
+  
+  \item \textbf{CI/CD enforcement}: Integration with Jenkins lets the system act as a gate that blocks insecure code from being deployed.
+  
+  \item \textbf{Monitoring}: Prometheus metrics and Grafana dashboards give a live view of the security posture across all scans.
+  
+  \item \textbf{Fully offline}: The whole system works without any cloud dependency, making it suitable for restricted or air-gapped environments.
+\end{itemize}
+
+
+% ────────────────────────────────────────────────────────────────────────────
+\section{Development Methodology: Scrum}
+\label{sec:scrum}
+
+The project was developed using the \textbf{Scrum} agile framework~\cite{schwaber2020scrum}. We chose Scrum because of its iterative approach, its focus on delivering working software in short cycles, and its flexibility when requirements change. In Scrum, development is organized into fixed-length periods called \emph{sprints}, and each sprint produces a working version of the product that can be tested and reviewed.
+
+\subsection{Key Scrum Roles}
+
+\begin{itemize}[leftmargin=1.5cm]
+  \item \textbf{Product Owner}: The project supervisor (M.~Slim Abd Elbari), who defined the requirements and set the priorities for the product backlog.
+  \item \textbf{Scrum Master / Developer}: The student (Ridha Gnounou), responsible for building the features, managing the process, and solving any obstacles that came up.
+\end{itemize}
+
+\subsection{Sprint Organization}
+
+The project was completed over \textbf{four sprints}, spanning three months from February~15 to May~15,~2026. Table~\ref{tab:sprints-overview} shows the timeline and main goals for each sprint.
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{|c|c|X|}
+\hline
+\textbf{Sprint} & \textbf{Period} & \textbf{Objectives} \\
+\hline
+Sprint 1 & Feb 15 -- Mar 7 & Core microservice: REST API, parsers for three formats, normalization layer, first 12 security policies. \\
+\hline
+Sprint 2 & Mar 8 -- Mar 28 & Expand policies to 103, add configurable severity threshold, implement diff-only scanning. \\
+\hline
+Sprint 3 & Mar 29 -- Apr 18 & Web dashboard, auto-fix engine, HTML/PDF reports, scan history with SQLite. \\
+\hline
+Sprint 4 & Apr 19 -- May 15 & Jenkins CI/CD integration, Gitea, VS Code extension, Prometheus/Grafana monitoring. \\
+\hline
+\end{tabularx}
+\caption{Sprint timeline and objectives.}
+\label{tab:sprints-overview}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    box/.style = {
+        draw, thick, rounded corners=4pt,
+        minimum width=2.2cm, minimum height=1cm,
+        align=center, font=\small\bfseries
+    },
+    arr/.style = {-{Stealth[length=5pt]}, thick}
+]
+
+% Nodes
+\node[box, fill=blue!15] (backlog) at (0,0) {Product\\Backlog};
+\node[box, fill=orange!15] (planning) at (3.5,0) {Sprint\\Planning};
+\node[box, fill=green!15, minimum width=3cm] (sprint) at (7.5,0) {Sprint\\{\tiny (2--3 weeks)}};
+\node[box, fill=purple!15] (review) at (11.5,0) {Sprint\\Review};
+\node[box, fill=cyan!15] (increment) at (11.5,-2.5) {Working\\Increment};
+\node[box, fill=yellow!15, dashed] (retro) at (7.5,-2.5) {Sprint\\Retrospective};
+
+% Arrows
+\draw[arr] (backlog) -- (planning);
+\draw[arr] (planning) -- (sprint);
+\draw[arr] (sprint) -- (review);
+\draw[arr] (review) -- (increment);
+\draw[arr] (increment) -- (retro);
+
+% Feedback loop
+\draw[arr, dashed, color=red!60] (retro) -| node[below left, font=\tiny, pos=0.3] {feedback} (backlog);
+
+% Daily standup annotation
+\draw[arr, color=green!60!black] (sprint.north) to[out=50,in=130,looseness=4]
+    node[above, font=\tiny] {Daily Stand-up} (sprint.north);
+
+\end{tikzpicture}
+\caption{The Scrum process adapted for this project.}
+\label{fig:scrum-process}
+\end{figure}
+
+\subsection{Scrum Artifacts}
+
+The main artifacts we maintained throughout the project were:
+
+\begin{itemize}[leftmargin=1.5cm]
+  \item \textbf{Product Backlog}: A prioritized list of all features, written as user stories with acceptance criteria (detailed in Chapter~\ref{chap:planning}).
+  \item \textbf{Sprint Backlog}: The specific user stories picked for each sprint, with estimated effort.
+  \item \textbf{Increment}: The working software delivered at the end of each sprint, tested and reviewed by the supervisor.
+\end{itemize}
+
+\subsection{Scrum Events}
+
+Since this project was done by a single developer, Scrum events were adapted as follows:
+
+\begin{itemize}[leftmargin=1.5cm]
+  \item \textbf{Sprint Planning}: Done at the start of each sprint to pick and refine backlog items.
+  \item \textbf{Sprint Review}: A meeting with the supervisor at the end of each sprint to demo the work and get feedback.
+  \item \textbf{Sprint Retrospective}: A personal review of what went well and what could be improved for the next sprint.
+\end{itemize}
+
+
+% ────────────────────────────────────────────────────────────────────────────
+\section{Conclusion}
+
+This chapter set the context of the project. We presented the host institution (ISITCOM Hammam Sousse), looked at the security challenges that come with modern Infrastructure as Code workflows, described our proposed microservice solution, and explained the Scrum methodology that guided the development. The next chapter covers the theoretical background: DevSecOps principles, Infrastructure as Code, and a comparison of existing security scanning tools.

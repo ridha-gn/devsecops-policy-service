@@ -1,0 +1,515 @@
+% ============================================================================
+%  Chapter 7 — Sprint 4: CI/CD, VS Code Extension, and Monitoring
+% ============================================================================
+
+\chapter{Sprint 4: CI/CD Integration, VS Code Extension, and Monitoring}
+\label{chap:sprint4}
+
+\section{Introduction}
+
+The fourth and final sprint brought everything together. We connected the microservice to a Jenkins CI/CD pipeline, built a VS Code extension that scans code as the developer types, and set up Prometheus and Grafana for monitoring. After this sprint, security enforcement is present at every stage of the development process --- from the moment the developer saves a file, through the dashboard, all the way to the deployment pipeline.
+
+
+\section{Sprint Objectives}
+
+\begin{enumerate}[leftmargin=1.5cm]
+  \item Set up Jenkins with Poll SCM to automatically trigger scans when code is pushed to Gitea.
+  \item Write a Jenkinsfile that calls \texttt{POST /analyze} and fails the pipeline on BLOCK decisions.
+  \item Build a VS Code extension that scans infrastructure files on save and shows violations as inline markers.
+  \item Implement the \texttt{/metrics/prometheus} endpoint in Prometheus text format.
+  \item Configure Prometheus to scrape the metrics and Grafana to display them.
+  \item Test the complete three-phase defense demo (IDE $\rightarrow$ Dashboard $\rightarrow$ CI/CD).
+\end{enumerate}
+
+
+\section{Sprint Backlog}
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{|c|X|c|c|}
+\hline
+\textbf{ID} & \textbf{Task} & \textbf{Story} & \textbf{Status} \\
+\hline
+T-36 & Install and configure Gitea as a local Git server. & US-16 & Done \\
+\hline
+T-37 & Install and configure Jenkins 2.x with Poll SCM. & US-16 & Done \\
+\hline
+T-38 & Create alice-branch (insecure Terraform) and bob-branch (secure Terraform). & US-16 & Done \\
+\hline
+T-39 & Write Jenkinsfile that calls \texttt{POST /analyze}. & US-16 & Done \\
+\hline
+T-40 & Develop VS Code extension (\texttt{extension.js}, \texttt{package.json}). & US-17 & Done \\
+\hline
+T-41 & Implement scan-on-save with inline diagnostics. & US-17 & Done \\
+\hline
+T-42 & Implement auto-fix command in VS Code. & US-17 & Done \\
+\hline
+T-43 & Create \texttt{api/prometheus.py} for Prometheus metrics. & US-18 & Done \\
+\hline
+T-44 & Configure Prometheus scraping (\texttt{prometheus.yml}). & US-18 & Done \\
+\hline
+T-45 & Configure Grafana dashboard (\texttt{grafana\_dashboard.json}). & US-18 & Done \\
+\hline
+T-46 & Create Docker Compose for Prometheus + Grafana stack. & US-18 & Done \\
+\hline
+\end{tabularx}
+\caption{Sprint 4 backlog.}
+\label{tab:s4-backlog}
+\end{table}
+
+
+\section{Use Case Refinement}
+
+\subsection{Use Case: CI/CD Pipeline Security Gate}
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+\textbf{Use Case} & CI/CD Pipeline Security Gate \\
+\hline
+\textbf{Actor} & Jenkins (automated) \\
+\hline
+\textbf{Precondition} & Gitea repository is set up; Jenkins Poll SCM is active; the policy service is running. \\
+\hline
+\textbf{Postcondition} & The pipeline passes if the scan returns ALLOW; it fails if the scan returns BLOCK. \\
+\hline
+\textbf{Nominal Scenario} &
+  \begin{enumerate}[leftmargin=0.8cm, nosep]
+    \item A developer pushes code to a Gitea branch.
+    \item Jenkins Poll SCM detects the new commit and starts the pipeline.
+    \item The Jenkinsfile reads the Terraform files from the repository.
+    \item Jenkins sends a POST request to \texttt{/analyze} with the code.
+    \item The policy service returns ALLOW or BLOCK.
+    \item If ALLOW: the pipeline continues to deployment.
+    \item If BLOCK: the pipeline fails with an error listing the violations.
+  \end{enumerate} \\
+\hline
+\textbf{Alternative} &
+  \begin{itemize}[leftmargin=0.8cm, nosep]
+    \item[A1.] If the policy service is unreachable, the pipeline fails with a connection error.
+  \end{itemize} \\
+\hline
+\end{tabularx}
+\caption{Textual description --- ``CI/CD Security Gate'' use case.}
+\label{tab:uc-cicd}
+\end{table}
+
+\subsection{Use Case: Real-Time IDE Scanning}
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+\textbf{Use Case} & Real-Time IDE Scanning \\
+\hline
+\textbf{Actor} & Developer \\
+\hline
+\textbf{Precondition} & VS Code is open; the extension is installed; the policy service is running. \\
+\hline
+\textbf{Postcondition} & Violations appear as colored underlines directly in the code editor. \\
+\hline
+\textbf{Nominal Scenario} &
+  \begin{enumerate}[leftmargin=0.8cm, nosep]
+    \item The developer opens or saves a \texttt{.tf}, \texttt{Dockerfile}, or \texttt{.yaml} file.
+    \item The extension detects the file type and sends the content to \texttt{POST /analyze}.
+    \item The policy service returns violations with line numbers and severities.
+    \item The extension turns violations into VS Code diagnostic markers.
+    \item CRITICAL/HIGH violations show up as red error underlines.
+    \item MEDIUM violations show up as yellow warning underlines.
+    \item LOW violations show up as blue informational underlines.
+    \item The developer can run ``DevSecOps Auto-Fix'' from the command palette to fix issues.
+  \end{enumerate} \\
+\hline
+\end{tabularx}
+\caption{Textual description --- ``Real-Time IDE Scanning'' use case.}
+\label{tab:uc-vscode}
+\end{table}
+
+
+\section{Sequence Diagrams}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    participant/.style = {
+        draw, thick, rectangle, rounded corners=2pt,
+        minimum width=1.6cm, minimum height=0.6cm,
+        align=center, font=\scriptsize\bfseries,
+        fill=#1
+    },
+    msg/.style = {-{Stealth[length=4pt]}, thick},
+    ret/.style = {-{Stealth[length=4pt]}, thick, dashed}
+]
+
+% Participants
+\node[participant=gray!15] (dev) at (0, 0) {Developer};
+\node[participant=red!10] (gitea) at (3, 0) {Gitea};
+\node[participant=yellow!20] (jenkins) at (6, 0) {Jenkins};
+\node[participant=blue!15] (service) at (10, 0) {Policy\\Service};
+
+% Lifelines
+\foreach \n in {dev, gitea, jenkins, service}
+    \draw[dashed, thin, gray] (\n.south) -- ++(0, -7.5);
+
+% Messages
+\draw[msg] (0, -1) -- node[above, font=\tiny] {git push (alice-branch)} (3, -1);
+\draw[msg] (3, -1.8) -- node[above, font=\tiny] {Poll SCM detects change} (6, -1.8);
+\draw[msg] (6, -2.6) -- node[above, font=\tiny] {read main.tf} (3, -2.6);
+\draw[ret] (3, -3.2) -- node[above, font=\tiny] {file content} (6, -3.2);
+\draw[msg] (6, -4) -- node[above, font=\tiny] {POST /analyze \{terraform, content\}} (10, -4);
+
+% Decision
+\draw[ret, color=red!70] (10, -5) -- node[above, font=\tiny, color=red!70] {BLOCK (19 violations)} (6, -5);
+
+% Fail
+\draw[msg, color=red!70] (6, -5.8) -- ++(0.5, 0) node[right, font=\tiny, color=red!70] {Pipeline FAIL};
+\draw[ret, color=red!70] (6, -6.5) -- node[above, font=\tiny] {Build failed: BLOCKED} (0, -6.5);
+
+\end{tikzpicture}
+\caption{Sprint 4 sequence diagram: CI/CD pipeline security gate with Jenkins.}
+\label{fig:s4-cicd-sequence}
+\end{figure}
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    participant/.style = {
+        draw, thick, rectangle, rounded corners=2pt,
+        minimum width=1.6cm, minimum height=0.6cm,
+        align=center, font=\scriptsize\bfseries,
+        fill=#1
+    },
+    msg/.style = {-{Stealth[length=4pt]}, thick},
+    ret/.style = {-{Stealth[length=4pt]}, thick, dashed}
+]
+
+% Participants
+\node[participant=gray!15] (dev) at (0, 0) {Developer};
+\node[participant=purple!15] (ext) at (3.5, 0) {Extension};
+\node[participant=blue!15] (service) at (7.5, 0) {Policy\\Service};
+\node[participant=green!15] (vscode) at (11, 0) {VS Code\\UI};
+
+% Lifelines
+\foreach \n in {dev, ext, service, vscode}
+    \draw[dashed, thin, gray] (\n.south) -- ++(0, -7);
+
+% Messages
+\draw[msg] (0, -0.8) -- node[above, font=\tiny] {save main.tf} (3.5, -0.8);
+\draw[msg] (3.5, -1.5) -- node[above, font=\tiny] {onDidSave fires} (3.5, -1.5);
+\draw[msg] (3.5, -2.2) -- node[above, font=\tiny] {POST /analyze} (7.5, -2.2);
+\draw[ret] (7.5, -3) -- node[above, font=\tiny] {violations[ ]} (3.5, -3);
+
+% Map violations
+\draw[thick, rounded corners=2pt] (2.3, -3.5) rectangle (5, -4.5);
+\node[font=\tiny, anchor=north west] at (2.4, -3.55) {loop [each violation]};
+\node[font=\tiny] at (3.65, -4.05) {map to Diagnostic};
+
+\draw[msg] (3.5, -5) -- node[above, font=\tiny] {set diagnostics} (11, -5);
+\draw[msg, color=red!60] (11, -5.7) -- ++(0.5, 0) node[right, font=\tiny, color=red!60] {show red/yellow underlines};
+
+\end{tikzpicture}
+\caption{Sprint 4 sequence diagram: VS Code extension scan-on-save with inline diagnostics.}
+\label{fig:s4-vscode-sequence}
+\end{figure}
+
+
+\section{Realization}
+
+\subsection{Jenkins CI/CD Integration}
+
+\subsubsection{Infrastructure Setup}
+
+For the CI/CD demo, we used two self-hosted services running locally:
+
+\begin{itemize}[leftmargin=1.5cm]
+  \item \textbf{Gitea} (\texttt{localhost:3000}): A lightweight Git server that hosts the \texttt{devsecops-policy-service} repository with two demo branches. It runs locally so we do not depend on GitHub or any external service.
+  \item \textbf{Jenkins} (\texttt{localhost:8080}): Set up with Poll SCM to check the Gitea repository for changes every minute. When it finds a new commit, the pipeline starts automatically.
+\end{itemize}
+
+\subsubsection{Alice and Bob Demonstration}
+
+To show how the security gate works, we created two branches with different levels of security:
+
+\begin{itemize}[leftmargin=1.5cm]
+  \item \textbf{alice-branch}: Contains intentionally insecure Terraform code --- hardcoded AWS access keys, public S3 buckets, a publicly accessible database, and an open security group (0.0.0.0/0). When scanned, the service finds 19~violations and returns BLOCK, which makes the Jenkins pipeline fail.
+  
+  \item \textbf{bob-branch}: Contains properly secured Terraform code --- encrypted storage, private databases, restricted security groups, and compliance tags. The service returns ALLOW with zero violations, and the pipeline passes successfully.
+\end{itemize}
+
+Here is the simplified Jenkinsfile:
+
+\begin{lstlisting}[language={}, caption={Jenkinsfile pipeline logic (simplified).}, label={lst:jenkinsfile}]
+pipeline {
+    agent any
+    stages {
+        stage('Security Scan') {
+            steps {
+                script {
+                    def response = httpRequest(
+                        url: 'http://localhost:8000/analyze',
+                        httpMode: 'POST',
+                        contentType: 'APPLICATION_JSON',
+                        requestBody: """{
+                            "code_type": "terraform",
+                            "content": "${readFile('main.tf')}"
+                        }"""
+                    )
+                    def result = readJSON(text: response.content)
+                    if (result.decision == "BLOCK") {
+                        error "Security scan BLOCKED: ${result.violations.size()} violations"
+                    }
+                }
+            }
+        }
+    }
+}
+\end{lstlisting}
+
+\figplaceholder{Gitea repository with alice and bob branches}{gitea_repository}
+\figplaceholder{Jenkins pipeline: Alice BLOCK (insecure code)}{jenkins_alice_fail}
+\figplaceholder{Jenkins pipeline: Bob ALLOW (secure code)}{jenkins_bob_pass}
+\figplaceholder{Jenkins console output showing violations}{jenkins_console_output}
+
+\subsection{VS Code Extension}
+
+The VS Code extension (\texttt{vscode-extension/extension.js}) is written in JavaScript and provides three main features: scan on save, manual scan via command, and auto-fix.
+
+\subsubsection{Architecture}
+
+\begin{lstlisting}[language=Java, caption={VS Code extension activation (excerpt).}, label={lst:vscode-activate}]
+function activate(context) {
+    diagnosticCollection =
+        vscode.languages.createDiagnosticCollection('devsecops');
+    
+    // Command: Scan current file
+    context.subscriptions.push(
+        vscode.commands.registerCommand('devsecops.scanFile', () => {
+            const editor = vscode.window.activeTextEditor;
+            if (editor) scanDocument(editor.document);
+        })
+    );
+    
+    // Command: Auto-fix current file
+    context.subscriptions.push(
+        vscode.commands.registerCommand('devsecops.fixFile', () => {
+            const editor = vscode.window.activeTextEditor;
+            if (editor) fixDocument(editor.document);
+        })
+    );
+    
+    // Auto-scan on save (Observer pattern)
+    context.subscriptions.push(
+        vscode.workspace.onDidSaveTextDocument((document) => {
+            const config = vscode.workspace.getConfiguration('devsecops');
+            if (config.get('scanOnSave', true)) {
+                scanDocument(document);
+            }
+        })
+    );
+}
+\end{lstlisting}
+
+\subsubsection{File Type Detection}
+
+The extension uses a simple mapping to figure out the \texttt{code\_type} from the file extension:
+
+\begin{lstlisting}[language=Java, caption={File type detection mapping.}, label={lst:vscode-detect}]
+const CODE_TYPE_MAP = {
+    '.tf': 'terraform', '.hcl': 'terraform',
+    'Dockerfile': 'dockerfile',
+    '.yaml': 'yaml', '.yml': 'yaml',
+};
+\end{lstlisting}
+
+\subsubsection{Severity Mapping}
+
+Violations are mapped to VS Code diagnostic severity levels, so different types of issues get different colored underlines:
+
+\begin{lstlisting}[language=Java, caption={Severity mapping to VS Code diagnostics.}, label={lst:vscode-severity}]
+const SEVERITY_MAP = {
+    'CRITICAL': vscode.DiagnosticSeverity.Error,     // Red
+    'HIGH':     vscode.DiagnosticSeverity.Error,     // Red
+    'MEDIUM':   vscode.DiagnosticSeverity.Warning,   // Yellow
+    'LOW':      vscode.DiagnosticSeverity.Information, // Blue
+    'INFO':     vscode.DiagnosticSeverity.Hint,      // Grey
+};
+\end{lstlisting}
+
+\subsubsection{Auto-Fix in VS Code}
+
+The \texttt{fixDocument()} function sends the file content to \texttt{POST /fix}, gets back the corrected code, and applies it directly in the editor using a \texttt{WorkspaceEdit}. After applying the fix, it automatically re-scans the file to confirm that the issues are resolved:
+
+\begin{lstlisting}[language=Java, caption={VS Code auto-fix implementation (excerpt).}, label={lst:vscode-fix}]
+async function fixDocument(document) {
+    const result = await postRequest(`${serviceUrl}/fix`, {
+        code_type: codeType, content: document.getText(),
+    });
+    if (result.total_fixes === 0) {
+        vscode.window.showInformationMessage('No fixes needed');
+        return;
+    }
+    // Replace entire document with fixed code
+    const edit = new vscode.WorkspaceEdit();
+    const fullRange = new vscode.Range(
+        document.positionAt(0),
+        document.positionAt(document.getText().length)
+    );
+    edit.replace(document.uri, fullRange, result.fixed_code);
+    await vscode.workspace.applyEdit(edit);
+    // Re-scan after fix
+    await scanDocument(document);
+}
+\end{lstlisting}
+
+\figplaceholder{VS Code: inline violation markers on Terraform file}{vscode_violations}
+\figplaceholder{VS Code: file after auto-fix applied}{vscode_after_fix}
+
+\subsection{Prometheus and Grafana Monitoring}
+
+\subsubsection{Prometheus Metrics Endpoint}
+
+The \texttt{/metrics/prometheus} endpoint (\texttt{api/prometheus.py}) generates metrics in the Prometheus text format. Here are the metrics we expose:
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{|l|c|X|}
+\hline
+\textbf{Metric Name} & \textbf{Type} & \textbf{Description} \\
+\hline
+\texttt{devsecops\_scans\_total}            & Counter & Total number of scans performed. \\
+\hline
+\texttt{devsecops\_blocks\_total}           & Counter & Total number of BLOCK decisions. \\
+\hline
+\texttt{devsecops\_allows\_total}           & Counter & Total number of ALLOW decisions. \\
+\hline
+\texttt{devsecops\_block\_rate}             & Gauge   & Current block rate as a percentage. \\
+\hline
+\texttt{devsecops\_scans\_by\_type}         & Counter & Scans per code type (labeled). \\
+\hline
+\texttt{devsecops\_violation\_count}        & Counter & Count per violation rule (labeled). \\
+\hline
+\texttt{devsecops\_scan\_duration\_ms\_*}   & Summary & Scan duration stats (avg, min, max). \\
+\hline
+\texttt{devsecops\_violations\_by\_severity} & Counter & Violations per severity level (labeled). \\
+\hline
+\end{tabularx}
+\caption{Prometheus metrics exported by the service.}
+\label{tab:prometheus-metrics}
+\end{table}
+
+\subsubsection{Prometheus Configuration}
+
+Prometheus is set up to scrape the policy service every 15~seconds:
+
+\begin{lstlisting}[language=yaml, caption={Prometheus scrape configuration (\texttt{prometheus.yml}).}, label={lst:prom-config}]
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'devsecops-policy-service'
+    metrics_path: '/metrics/prometheus'
+    static_configs:
+      - targets: ['localhost:8000']
+\end{lstlisting}
+
+\subsubsection{Grafana Dashboard}
+
+The Grafana dashboard (\texttt{config/grafana\_dashboard.json}) comes with six panels ready to use:
+
+\begin{enumerate}[leftmargin=1.5cm]
+  \item \textbf{Total Scans}: A stat panel showing the total number of scans.
+  \item \textbf{Deployments Blocked}: A stat panel highlighting blocked scans in red.
+  \item \textbf{Deployments Allowed}: A stat panel showing allowed scans in green.
+  \item \textbf{Block Rate Gauge}: A gauge showing the block rate as a percentage.
+  \item \textbf{Violations by Rule}: A bar chart showing which policies are violated the most.
+  \item \textbf{Scans Over Time}: A time-series graph showing scan activity trends.
+\end{enumerate}
+
+\subsubsection{Docker Compose Stack}
+
+Prometheus and Grafana are deployed together using Docker Compose:
+
+\begin{lstlisting}[language=yaml, caption={Docker Compose for monitoring stack.}, label={lst:compose}]
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    network_mode: host
+    volumes:
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+
+  grafana:
+    image: grafana/grafana:latest
+    network_mode: host
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SERVER_HTTP_PORT=3001
+    volumes:
+      - grafana_data:/var/lib/grafana
+
+volumes:
+  grafana_data:
+\end{lstlisting}
+
+\figplaceholder{Prometheus metrics endpoint output}{prometheus_metrics}
+\figplaceholder{Grafana dashboard with all six panels}{grafana_dashboard}
+
+
+\section{Three-Phase Defense Demo}
+
+The complete platform enables a three-phase security demo that covers every stage of the development lifecycle:
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{|c|l|X|}
+\hline
+\textbf{Phase} & \textbf{Name} & \textbf{Description} \\
+\hline
+1 & Shift-Left & Developer saves insecure Terraform in VS Code $\rightarrow$ extension shows red underlines instantly, before the code reaches Git. \\
+\hline
+2 & Remediation & Paste insecure code in the dashboard $\rightarrow$ BLOCK $\rightarrow$ click Auto-Fix $\rightarrow$ see the diff $\rightarrow$ rescan $\rightarrow$ ALLOW. \\
+\hline
+3 & Monitoring & Check the Prometheus endpoint $\rightarrow$ view the Grafana dashboard with live metrics $\rightarrow$ download the HTML compliance report. \\
+\hline
+\end{tabularx}
+\caption{Three-phase defense demonstration.}
+\label{tab:demo-phases}
+\end{table}
+
+
+\section{Tests}
+
+All 32~tests pass with zero warnings after Sprint~4:
+
+\begin{lstlisting}[language={}, caption={Final test suite results.}, label={lst:final-tests}]
+$ pytest tests/ -v
+========================= test session starts =========================
+tests/test_api.py::test_root_endpoint              PASSED
+tests/test_api.py::test_health_check                PASSED
+tests/test_api.py::test_analyze_safe_code           PASSED
+tests/test_api.py::test_analyze_public_s3           PASSED
+tests/test_api.py::test_analyze_hardcoded_secret    PASSED
+tests/test_api.py::test_invalid_code_type           PASSED
+tests/test_api.py::test_fix_endpoint                PASSED
+tests/test_api.py::test_fix_no_changes_needed       PASSED
+tests/test_api.py::test_prometheus_metrics           PASSED
+tests/test_api.py::test_metrics_json                PASSED
+tests/test_api.py::test_history                     PASSED
+... (32 tests total)
+========================= 32 passed, 0 warnings ======================
+\end{lstlisting}
+
+
+\section{Interfaces}
+
+\figplaceholder{Gitea repository with alice and bob branches}{gitea_repository}
+\figplaceholder{Alice's insecure Terraform (alice-branch)}{gitea_alice_code}
+\figplaceholder{Bob's secure Terraform (bob-branch)}{gitea_bob_code}
+\figplaceholder{Jenkins BLOCK for Alice's insecure code}{jenkins_alice_fail}
+\figplaceholder{Jenkins ALLOW for Bob's secure code}{jenkins_bob_pass}
+\figplaceholder{VS Code with inline violation markers}{vscode_violations}
+\figplaceholder{Grafana live dashboard with all panels}{grafana_dashboard}
+
+
+\section{Conclusion}
+
+Sprint~4 completed the DevSecOps platform by adding security enforcement at every stage. The Jenkins CI/CD pipeline, demonstrated through the Alice and Bob scenario, stops insecure code from reaching deployment. The VS Code extension brings scanning to the earliest possible moment --- right when the developer writes the code. The Prometheus/Grafana stack gives a continuous live view of the security posture. With all four sprints done, the system has 7{,}125~lines of code, 103~security policies, 32~passing tests, and an average response time of 46\,ms.

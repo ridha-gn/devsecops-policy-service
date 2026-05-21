@@ -1,0 +1,134 @@
+\babel@toc {english}{}\relax 
+\contentsline {chapter}{Acknowledgments}{iii}{chapter*.1}%
+\contentsline {chapter}{List of Acronyms}{xi}{chapter*.5}%
+\contentsline {chapter}{General Introduction}{1}{chapter*.6}%
+\contentsline {chapter}{\numberline {1}General Context of the Project}{3}{chapter.1}%
+\contentsline {section}{\numberline {1.1}Introduction}{3}{section.1.1}%
+\contentsline {section}{\numberline {1.2}Presentation of the Host Institution}{3}{section.1.2}%
+\contentsline {section}{\numberline {1.3}Problem Statement}{4}{section.1.3}%
+\contentsline {section}{\numberline {1.4}Proposed Solution}{5}{section.1.4}%
+\contentsline {section}{\numberline {1.5}Development Methodology: Scrum}{6}{section.1.5}%
+\contentsline {subsection}{\numberline {1.5.1}Key Scrum Roles}{6}{subsection.1.5.1}%
+\contentsline {subsection}{\numberline {1.5.2}Sprint Organization}{6}{subsection.1.5.2}%
+\contentsline {subsection}{\numberline {1.5.3}Scrum Artifacts}{7}{subsection.1.5.3}%
+\contentsline {subsection}{\numberline {1.5.4}Scrum Events}{7}{subsection.1.5.4}%
+\contentsline {section}{\numberline {1.6}Conclusion}{7}{section.1.6}%
+\contentsline {chapter}{\numberline {2}DevSecOps Fundamentals and State of the Art}{8}{chapter.2}%
+\contentsline {section}{\numberline {2.1}Introduction}{8}{section.2.1}%
+\contentsline {section}{\numberline {2.2}From DevOps to DevSecOps}{8}{section.2.2}%
+\contentsline {subsection}{\numberline {2.2.1}DevOps: Definition and Principles}{8}{subsection.2.2.1}%
+\contentsline {subsection}{\numberline {2.2.2}The Security Gap in Traditional DevOps}{9}{subsection.2.2.2}%
+\contentsline {subsection}{\numberline {2.2.3}DevSecOps: Security as a Shared Responsibility}{9}{subsection.2.2.3}%
+\contentsline {section}{\numberline {2.3}The Shift-Left Security Paradigm}{10}{section.2.3}%
+\contentsline {section}{\numberline {2.4}Infrastructure as Code}{11}{section.2.4}%
+\contentsline {subsection}{\numberline {2.4.1}Terraform}{11}{subsection.2.4.1}%
+\contentsline {subsection}{\numberline {2.4.2}Docker}{12}{subsection.2.4.2}%
+\contentsline {subsection}{\numberline {2.4.3}Kubernetes}{12}{subsection.2.4.3}%
+\contentsline {section}{\numberline {2.5}Policy-as-Code}{13}{section.2.5}%
+\contentsline {section}{\numberline {2.6}Design Patterns}{13}{section.2.6}%
+\contentsline {section}{\numberline {2.7}Comparative Study of Existing Tools}{14}{section.2.7}%
+\contentsline {subsection}{\numberline {2.7.1}Analysis}{15}{subsection.2.7.1}%
+\contentsline {section}{\numberline {2.8}Conclusion}{16}{section.2.8}%
+\contentsline {chapter}{\numberline {3}Requirements Analysis and System Architecture}{17}{chapter.3}%
+\contentsline {section}{\numberline {3.1}Introduction}{17}{section.3.1}%
+\contentsline {section}{\numberline {3.2}Identification of Actors}{17}{section.3.2}%
+\contentsline {section}{\numberline {3.3}Requirements Capture}{18}{section.3.3}%
+\contentsline {subsection}{\numberline {3.3.1}Functional Requirements}{18}{subsection.3.3.1}%
+\contentsline {subsection}{\numberline {3.3.2}Non-Functional Requirements}{19}{subsection.3.3.2}%
+\contentsline {section}{\numberline {3.4}Product Backlog}{19}{section.3.4}%
+\contentsline {section}{\numberline {3.5}Global Use Case Diagram}{21}{section.3.5}%
+\contentsline {section}{\numberline {3.6}Application Architecture}{21}{section.3.6}%
+\contentsline {subsection}{\numberline {3.6.1}Four-Layer Architecture}{21}{subsection.3.6.1}%
+\contentsline {subsection}{\numberline {3.6.2}Global System Architecture}{23}{subsection.3.6.2}%
+\contentsline {section}{\numberline {3.7}Class Diagram}{24}{section.3.7}%
+\contentsline {section}{\numberline {3.8}Sprint Planning}{25}{section.3.8}%
+\contentsline {section}{\numberline {3.9}Development Environment}{25}{section.3.9}%
+\contentsline {subsection}{\numberline {3.9.1}Hardware Environment}{25}{subsection.3.9.1}%
+\contentsline {subsection}{\numberline {3.9.2}Software Environment}{26}{subsection.3.9.2}%
+\contentsline {section}{\numberline {3.10}Conclusion}{26}{section.3.10}%
+\contentsline {chapter}{\numberline {4}Sprint 1: Core Microservice}{27}{chapter.4}%
+\contentsline {section}{\numberline {4.1}Introduction}{27}{section.4.1}%
+\contentsline {section}{\numberline {4.2}Sprint Objectives}{27}{section.4.2}%
+\contentsline {section}{\numberline {4.3}Sprint Backlog}{28}{section.4.3}%
+\contentsline {section}{\numberline {4.4}Use Case Refinement}{28}{section.4.4}%
+\contentsline {subsection}{\numberline {4.4.1}Use Case: Analyze Infrastructure Code}{28}{subsection.4.4.1}%
+\contentsline {section}{\numberline {4.5}Sequence Diagram}{30}{section.4.5}%
+\contentsline {section}{\numberline {4.6}Realization}{30}{section.4.6}%
+\contentsline {subsection}{\numberline {4.6.1}Project Structure}{30}{subsection.4.6.1}%
+\contentsline {subsection}{\numberline {4.6.2}Application Entry Point}{31}{subsection.4.6.2}%
+\contentsline {subsection}{\numberline {4.6.3}Pydantic Schemas}{31}{subsection.4.6.3}%
+\contentsline {subsection}{\numberline {4.6.4}Multi-Format Parser Layer}{32}{subsection.4.6.4}%
+\contentsline {subsubsection}{Terraform Parser and the \_strip\_quotes Fix}{32}{subsection.4.6.4}%
+\contentsline {subsubsection}{Dockerfile Parser}{32}{lstnumber.4.4.18}%
+\contentsline {subsubsection}{Kubernetes Parser}{33}{lstnumber.4.4.18}%
+\contentsline {subsection}{\numberline {4.6.5}Normalization Layer}{33}{subsection.4.6.5}%
+\contentsline {subsection}{\numberline {4.6.6}Initial Twelve Policies}{34}{subsection.4.6.6}%
+\contentsline {section}{\numberline {4.7}Tests}{35}{section.4.7}%
+\contentsline {section}{\numberline {4.8}Interfaces}{36}{section.4.8}%
+\contentsline {section}{\numberline {4.9}Conclusion}{38}{section.4.9}%
+\contentsline {chapter}{\numberline {5}Sprint 2: Policy Expansion and Threshold Configuration}{39}{chapter.5}%
+\contentsline {section}{\numberline {5.1}Introduction}{39}{section.5.1}%
+\contentsline {section}{\numberline {5.2}Sprint Objectives}{39}{section.5.2}%
+\contentsline {section}{\numberline {5.3}Sprint Backlog}{40}{section.5.3}%
+\contentsline {section}{\numberline {5.4}Use Case Refinement}{41}{section.5.4}%
+\contentsline {subsection}{\numberline {5.4.1}Use Case: Analyze with Configurable Threshold}{41}{subsection.5.4.1}%
+\contentsline {section}{\numberline {5.5}Sequence Diagram}{42}{section.5.5}%
+\contentsline {section}{\numberline {5.6}Realization}{42}{section.5.6}%
+\contentsline {subsection}{\numberline {5.6.1}Policy Categories and Distribution}{42}{subsection.5.6.1}%
+\contentsline {subsection}{\numberline {5.6.2}Severity Threshold Mechanism}{44}{subsection.5.6.2}%
+\contentsline {subsection}{\numberline {5.6.3}Diff-Only Scanning Mode}{44}{subsection.5.6.3}%
+\contentsline {subsection}{\numberline {5.6.4}Policy Implementation Examples}{45}{subsection.5.6.4}%
+\contentsline {subsubsection}{EC2 IMDSv2 Enforcement}{45}{subsection.5.6.4}%
+\contentsline {subsubsection}{Kubernetes Privilege Escalation}{45}{lstnumber.5.3.14}%
+\contentsline {section}{\numberline {5.7}Tests}{46}{section.5.7}%
+\contentsline {section}{\numberline {5.8}Interfaces}{47}{section.5.8}%
+\contentsline {section}{\numberline {5.9}Conclusion}{48}{section.5.9}%
+\contentsline {chapter}{\numberline {6}Sprint 3: Dashboard, Auto-Fix Engine, and Reports}{49}{chapter.6}%
+\contentsline {section}{\numberline {6.1}Introduction}{49}{section.6.1}%
+\contentsline {section}{\numberline {6.2}Sprint Objectives}{49}{section.6.2}%
+\contentsline {section}{\numberline {6.3}Sprint Backlog}{50}{section.6.3}%
+\contentsline {section}{\numberline {6.4}Use Case Refinement}{51}{section.6.4}%
+\contentsline {subsection}{\numberline {6.4.1}Use Case: Auto-Fix Violations}{51}{subsection.6.4.1}%
+\contentsline {section}{\numberline {6.5}Sequence Diagram}{52}{section.6.5}%
+\contentsline {section}{\numberline {6.6}Realization}{52}{section.6.6}%
+\contentsline {subsection}{\numberline {6.6.1}Auto-Fix Engine Architecture}{52}{subsection.6.6.1}%
+\contentsline {subsection}{\numberline {6.6.2}Fix Function Examples}{53}{subsection.6.6.2}%
+\contentsline {subsubsection}{Terraform: Public S3 to Private}{53}{subsection.6.6.2}%
+\contentsline {subsubsection}{Terraform: Hardcoded Secrets to Variable References}{53}{lstnumber.6.2.11}%
+\contentsline {subsubsection}{Dockerfile: Adding Non-Root User}{53}{lstnumber.6.2.11}%
+\contentsline {subsubsection}{Kubernetes: Disabling Privileged Mode}{54}{lstnumber.6.2.11}%
+\contentsline {subsection}{\numberline {6.6.3}Diff Generation}{54}{subsection.6.6.3}%
+\contentsline {subsection}{\numberline {6.6.4}Web Dashboard}{54}{subsection.6.6.4}%
+\contentsline {subsection}{\numberline {6.6.5}Compliance Reports}{58}{subsection.6.6.5}%
+\contentsline {subsection}{\numberline {6.6.6}SQLite Scan History}{59}{subsection.6.6.6}%
+\contentsline {section}{\numberline {6.7}Tests}{59}{section.6.7}%
+\contentsline {section}{\numberline {6.8}Interfaces}{60}{section.6.8}%
+\contentsline {section}{\numberline {6.9}Conclusion}{63}{section.6.9}%
+\contentsline {chapter}{\numberline {7}Sprint 4: CI/CD Integration, VS Code Extension, and Monitoring}{64}{chapter.7}%
+\contentsline {section}{\numberline {7.1}Introduction}{64}{section.7.1}%
+\contentsline {section}{\numberline {7.2}Sprint Objectives}{64}{section.7.2}%
+\contentsline {section}{\numberline {7.3}Sprint Backlog}{65}{section.7.3}%
+\contentsline {section}{\numberline {7.4}Use Case Refinement}{66}{section.7.4}%
+\contentsline {subsection}{\numberline {7.4.1}Use Case: CI/CD Pipeline Security Gate}{66}{subsection.7.4.1}%
+\contentsline {subsection}{\numberline {7.4.2}Use Case: Real-Time IDE Scanning}{67}{subsection.7.4.2}%
+\contentsline {section}{\numberline {7.5}Sequence Diagrams}{68}{section.7.5}%
+\contentsline {section}{\numberline {7.6}Realization}{69}{section.7.6}%
+\contentsline {subsection}{\numberline {7.6.1}Jenkins CI/CD Integration}{69}{subsection.7.6.1}%
+\contentsline {subsubsection}{Infrastructure Setup}{69}{subsection.7.6.1}%
+\contentsline {subsubsection}{Alice and Bob Demonstration}{69}{subsection.7.6.1}%
+\contentsline {subsection}{\numberline {7.6.2}VS Code Extension}{73}{subsection.7.6.2}%
+\contentsline {subsubsection}{Architecture}{73}{subsection.7.6.2}%
+\contentsline {subsubsection}{File Type Detection}{74}{lstnumber.7.2.30}%
+\contentsline {subsubsection}{Severity Mapping}{74}{lstnumber.7.3.5}%
+\contentsline {subsubsection}{Auto-Fix in VS Code}{75}{lstnumber.7.4.7}%
+\contentsline {subsection}{\numberline {7.6.3}Prometheus and Grafana Monitoring}{77}{subsection.7.6.3}%
+\contentsline {subsubsection}{Prometheus Metrics Endpoint}{77}{subsection.7.6.3}%
+\contentsline {subsubsection}{Prometheus Configuration}{78}{table.caption.65}%
+\contentsline {subsubsection}{Grafana Dashboard}{78}{lstnumber.7.6.8}%
+\contentsline {subsubsection}{Docker Compose Stack}{79}{Item.93}%
+\contentsline {section}{\numberline {7.7}Three-Phase Defense Demo}{81}{section.7.7}%
+\contentsline {section}{\numberline {7.8}Tests}{81}{section.7.8}%
+\contentsline {section}{\numberline {7.9}Interfaces}{83}{section.7.9}%
+\contentsline {section}{\numberline {7.10}Conclusion}{89}{section.7.10}%
+\contentsline {chapter}{General Conclusion}{90}{chapter*.76}%
+\contentsline {chapter}{Abstract}{96}{chapter*.79}%

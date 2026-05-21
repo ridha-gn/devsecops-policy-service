@@ -1,0 +1,53 @@
+\babel@toc {english}{}\relax 
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {1.1}{\ignorespaces ISITCOM Hammam Sousse}}{4}{figure.caption.7}%
+\contentsline {figure}{\numberline {1.2}{\ignorespaces The Scrum process adapted for this project.}}{7}{figure.caption.9}%
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {2.1}{\ignorespaces The DevOps lifecycle: an iterative loop connecting development and operations stages.}}{9}{figure.caption.10}%
+\contentsline {figure}{\numberline {2.2}{\ignorespaces The DevSecOps lifecycle: security is integrated at every stage of the development and operations loop.}}{10}{figure.caption.11}%
+\contentsline {figure}{\numberline {2.3}{\ignorespaces Shift-left security: finding and fixing defects earlier in the lifecycle costs significantly less.}}{11}{figure.caption.12}%
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {3.1}{\ignorespaces Global use case diagram showing actors and their interactions with the system.}}{21}{figure.caption.17}%
+\contentsline {figure}{\numberline {3.2}{\ignorespaces Four-layer architecture of the microservice with data flow.}}{23}{figure.caption.19}%
+\contentsline {figure}{\numberline {3.3}{\ignorespaces Global system architecture showing all integrated services.}}{23}{figure.caption.20}%
+\contentsline {figure}{\numberline {3.4}{\ignorespaces Global class diagram of the microservice showing the main classes and their relationships.}}{24}{figure.caption.21}%
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {4.1}{\ignorespaces Sprint 1 use case diagram: Analyze Infrastructure Code with internal steps.}}{28}{figure.caption.26}%
+\contentsline {figure}{\numberline {4.2}{\ignorespaces Sprint 1 sequence diagram: the complete analysis flow from client request to response.}}{30}{figure.caption.28}%
+\contentsline {figure}{\numberline {4.3}{\ignorespaces Swagger UI --- FastAPI /docs}}{36}{figure.caption.31}%
+\contentsline {figure}{\numberline {4.4}{\ignorespaces API response: BLOCK decision}}{37}{figure.caption.32}%
+\contentsline {figure}{\numberline {4.5}{\ignorespaces API response: ALLOW decision}}{38}{figure.caption.33}%
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {5.1}{\ignorespaces Sprint 2 sequence diagram: threshold filtering separates blocking from non-blocking violations.}}{42}{figure.caption.36}%
+\contentsline {figure}{\numberline {5.2}{\ignorespaces Distribution of 103 security policies across the 15 categories.}}{43}{figure.caption.38}%
+\contentsline {figure}{\numberline {5.3}{\ignorespaces Server startup: 103 policies loaded}}{47}{figure.caption.39}%
+\contentsline {figure}{\numberline {5.4}{\ignorespaces Threshold comparison: ALLOW vs BLOCK}}{48}{figure.caption.40}%
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {6.1}{\ignorespaces Sprint 3 sequence diagram: the auto-fix workflow from dashboard request to code correction.}}{52}{figure.caption.43}%
+\contentsline {figure}{\numberline {6.2}{\ignorespaces Dashboard --- main interface}}{55}{figure.caption.44}%
+\contentsline {figure}{\numberline {6.3}{\ignorespaces Dashboard --- BLOCK result with violations}}{56}{figure.caption.45}%
+\contentsline {figure}{\numberline {6.4}{\ignorespaces Dashboard --- Auto-Fix diff view}}{57}{figure.caption.46}%
+\contentsline {figure}{\numberline {6.5}{\ignorespaces Dashboard --- scan history table}}{58}{figure.caption.47}%
+\contentsline {figure}{\numberline {6.6}{\ignorespaces HTML compliance report}}{59}{figure.caption.48}%
+\contentsline {figure}{\numberline {6.7}{\ignorespaces Dashboard --- full scan workflow}}{60}{figure.caption.50}%
+\contentsline {figure}{\numberline {6.8}{\ignorespaces Auto-Fix before and after}}{61}{figure.caption.51}%
+\contentsline {figure}{\numberline {6.9}{\ignorespaces Generated HTML compliance report}}{62}{figure.caption.52}%
+\contentsline {figure}{\numberline {6.10}{\ignorespaces Scan history panel}}{63}{figure.caption.53}%
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {7.1}{\ignorespaces Sprint 4 sequence diagram: CI/CD pipeline security gate with Jenkins.}}{68}{figure.caption.57}%
+\contentsline {figure}{\numberline {7.2}{\ignorespaces Sprint 4 sequence diagram: VS Code extension scan-on-save with inline diagnostics.}}{68}{figure.caption.58}%
+\contentsline {figure}{\numberline {7.3}{\ignorespaces Gitea repository with alice and bob branches}}{70}{figure.caption.59}%
+\contentsline {figure}{\numberline {7.4}{\ignorespaces Jenkins pipeline: Alice BLOCK (insecure code)}}{71}{figure.caption.60}%
+\contentsline {figure}{\numberline {7.5}{\ignorespaces Jenkins pipeline: Bob ALLOW (secure code)}}{72}{figure.caption.61}%
+\contentsline {figure}{\numberline {7.6}{\ignorespaces Jenkins console output showing violations}}{73}{figure.caption.62}%
+\contentsline {figure}{\numberline {7.7}{\ignorespaces VS Code: inline violation markers on Terraform file}}{76}{figure.caption.63}%
+\contentsline {figure}{\numberline {7.8}{\ignorespaces VS Code: file after auto-fix applied}}{77}{figure.caption.64}%
+\contentsline {figure}{\numberline {7.9}{\ignorespaces Prometheus metrics endpoint output}}{80}{figure.caption.66}%
+\contentsline {figure}{\numberline {7.10}{\ignorespaces Grafana dashboard with all six panels}}{81}{figure.caption.67}%
+\contentsline {figure}{\numberline {7.11}{\ignorespaces Gitea repository with alice and bob branches}}{83}{figure.caption.69}%
+\contentsline {figure}{\numberline {7.12}{\ignorespaces Alice's insecure Terraform (alice-branch)}}{84}{figure.caption.70}%
+\contentsline {figure}{\numberline {7.13}{\ignorespaces Bob's secure Terraform (bob-branch)}}{85}{figure.caption.71}%
+\contentsline {figure}{\numberline {7.14}{\ignorespaces Jenkins BLOCK for Alice's insecure code}}{86}{figure.caption.72}%
+\contentsline {figure}{\numberline {7.15}{\ignorespaces Jenkins ALLOW for Bob's secure code}}{87}{figure.caption.73}%
+\contentsline {figure}{\numberline {7.16}{\ignorespaces VS Code with inline violation markers}}{88}{figure.caption.74}%
+\contentsline {figure}{\numberline {7.17}{\ignorespaces Grafana live dashboard with all panels}}{89}{figure.caption.75}%

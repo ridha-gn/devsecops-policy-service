@@ -1,0 +1,37 @@
+% ============================================================================
+%  General Introduction
+% ============================================================================
+
+\chapter*{General Introduction}
+\addcontentsline{toc}{chapter}{General Introduction}
+\markboth{General Introduction}{General Introduction}
+
+In recent years, companies have been moving their critical systems to the cloud at a fast pace. This shift has changed the way infrastructure is set up, managed, and scaled. Tools like Terraform, Docker, and Kubernetes have become essential for defining and deploying cloud resources. They allow teams to manage their infrastructure through code, just like they manage their applications~\cite{morris2020iac}. While this brings a lot of flexibility and speed, it also creates a serious risk: a single mistake in a Terraform file or a Kubernetes manifest --- like leaving a database open to the internet or running a container as root --- can go through the entire pipeline and reach production without anyone noticing~\cite{aws2024wellarchitected}.
+
+The traditional way of handling security, where a separate team reviews infrastructure configurations manually before deployment, simply does not work anymore with the speed of modern DevOps workflows. The number of infrastructure files keeps growing, and manual reviews become slow, inconsistent, and easy to skip under deadline pressure. Industry reports consistently show that cloud misconfigurations are one of the top causes of security incidents~\cite{rajapakse2022challenges}.
+
+This is where the DevSecOps philosophy comes in. The idea is to embed security directly into the development process --- a concept known as \emph{shift-left security}: catching problems as early as possible, ideally the moment the developer writes the code, instead of discovering them in production~\cite{myrbakken2017devsecops}. However, existing open-source tools like Checkov, tfsec, and Trivy each solve only part of the problem. None of them offers a single platform that combines real-time IDE scanning, automated code fixing, CI/CD pipeline enforcement, and operational monitoring all in one place.
+
+This project presents the design and implementation of a \textbf{DevSecOps Policy-as-Code microservice} that fills this gap. The service scans Terraform, Dockerfile, and Kubernetes YAML files against 103~security policies, returns clear ALLOW/BLOCK decisions with helpful feedback, and integrates across the entire development lifecycle --- from the developer's IDE, through the CI/CD pipeline, to a Grafana monitoring dashboard. An auto-fix engine that can fix 15+ types of vulnerabilities with one click completes the loop, turning the service from a simple scanner into an active security assistant.
+
+\vspace{0.5cm}
+
+\noindent The rest of this report is organized as follows:
+
+\begin{itemize}[leftmargin=1.5cm]
+  \item \textbf{Chapter~1} presents the general context: the host institution, the problem we are solving, and the development methodology we adopted.
+  
+  \item \textbf{Chapter~2} covers the theoretical background: DevSecOps principles, the shift-left paradigm, Infrastructure as Code, and a comparison of existing tools.
+  
+  \item \textbf{Chapter~3} details the requirements analysis, the system architecture, the product backlog, and the technology stack.
+  
+  \item \textbf{Chapter~4} covers Sprint~1: building the core microservice with the REST API, parsers, normalizer, and the first twelve security policies.
+  
+  \item \textbf{Chapter~5} describes Sprint~2: expanding the policies to 103, adding the severity threshold, and implementing diff-only scanning.
+  
+  \item \textbf{Chapter~6} presents Sprint~3: the web dashboard, the auto-fix engine, compliance reports, and scan history.
+  
+  \item \textbf{Chapter~7} covers Sprint~4: the Jenkins CI/CD pipeline, the VS~Code extension, and the Prometheus/Grafana monitoring layer.
+\end{itemize}
+
+\noindent The report ends with a general conclusion that summarizes what was achieved, the challenges we faced, and ideas for future improvements.

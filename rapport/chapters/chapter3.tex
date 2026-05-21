@@ -1,0 +1,541 @@
+% ============================================================================
+%  Chapter 3 — Requirements Analysis and System Architecture
+% ============================================================================
+
+\chapter{Requirements Analysis and System Architecture}
+\label{chap:planning}
+
+\section{Introduction}
+
+This chapter covers the planning work we did before writing any code. We identify who will use the system, list the functional and non-functional requirements, define the product backlog as user stories, model the system with UML diagrams, and describe the four-layer architecture and the overall deployment setup. We also describe the hardware and software environment used during the project.
+
+
+% ────────────────────────────────────────────────────────────────────────────
+\section{Identification of Actors}
+\label{sec:actors}
+
+The system interacts with four types of actors, each with a specific role:
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+\textbf{Actor} & \textbf{Description} \\
+\hline
+Developer & Writes infrastructure code in an IDE, gets real-time violation feedback through the VS~Code extension, and uses auto-fix to correct issues. \\
+\hline
+DevOps Engineer & Submits code for analysis through the dashboard or API, reviews scan reports, sets severity thresholds, and manages CI/CD pipelines. \\
+\hline
+Security Officer & Defines security policies, reviews compliance reports, monitors violation trends through Grafana, and adjusts blocking thresholds. \\
+\hline
+Jenkins (automated) & Triggers scans automatically when code is pushed via Poll SCM, receives ALLOW/BLOCK decisions, and enforces pipeline pass/fail gates. \\
+\hline
+\end{tabularx}
+\caption{System actors and their roles.}
+\label{tab:actors}
+\end{table}
+
+
+% ────────────────────────────────────────────────────────────────────────────
+\section{Requirements Capture}
+\label{sec:requirements}
+
+\subsection{Functional Requirements}
+
+The functional requirements were gathered through discussions with the project supervisor and organized by how the system integrates with different tools:
+
+\begin{enumerate}[leftmargin=2cm, label=\textbf{FR-\arabic*}, labelsep=0.5cm]
+  \item The system shall accept infrastructure code in Terraform, Dockerfile, and Kubernetes YAML formats through a REST API.
+  \item The system shall parse each format using a dedicated parser and normalize the result into a unified data model.
+  \item The system shall evaluate the normalized code against all applicable security policies.
+  \item The system shall return a binary ALLOW or BLOCK decision based on a configurable severity threshold.
+  \item Each violation shall include the rule ID, severity level, affected line number, a description, and a fix recommendation.
+  \item The system shall provide an auto-fix endpoint that returns corrected code and a git-style diff.
+  \item The system shall save scan results in a SQLite database for later analysis.
+  \item The system shall generate downloadable HTML and PDF compliance reports.
+  \item The system shall expose Prometheus-compatible metrics for use with Grafana.
+  \item The system shall provide a web dashboard for interactive code scanning and result viewing.
+  \item A VS Code extension shall scan infrastructure files on save and show violations as inline markers.
+  \item The system shall integrate with Jenkins pipelines to enforce security gates before deployment.
+  \item The system shall support diff-only mode, scanning only lines that changed in a unified diff.
+\end{enumerate}
+
+\subsection{Non-Functional Requirements}
+
+\begin{enumerate}[leftmargin=1.5cm, label=\textbf{NFR-\arabic*}]
+  \item \textbf{Performance}: Average scan response time must stay under 100\,ms for typical files.
+  \item \textbf{Reliability}: The service must maintain full test coverage on critical paths (32/32 tests passing, 0 warnings).
+  \item \textbf{Portability}: The entire system must run offline without needing any cloud services.
+  \item \textbf{Extensibility}: Adding a new security policy should only require writing a single Python class, without touching existing code.
+  \item \textbf{Usability}: Violation messages should be educational --- not just saying what is wrong, but also how to fix it.
+  \item \textbf{Maintainability}: The code should follow clean architecture principles with clear separation between layers.
+\end{enumerate}
+
+
+% ────────────────────────────────────────────────────────────────────────────
+\section{Product Backlog}
+\label{sec:backlog}
+
+The product backlog is organized as user stories in the standard format: \emph{``As a [role], I want [feature] so that [benefit].''}  Table~\ref{tab:product-backlog} shows the complete backlog with priorities.
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabularx}{\textwidth}{|c|X|c|c|}
+\hline
+\textbf{ID} & \textbf{User Story} & \textbf{Priority} & \textbf{Sprint} \\
+\hline
+US-01 & As a DevOps engineer, I want to submit Terraform code for security analysis so that I can find misconfigurations before deployment. & High & 1 \\
+\hline
+US-02 & As a DevOps engineer, I want to submit Dockerfiles for security analysis so that I can spot container security risks. & High & 1 \\
+\hline
+US-03 & As a DevOps engineer, I want to submit Kubernetes YAML for security analysis so that I can check pod and deployment configurations. & High & 1 \\
+\hline
+US-04 & As a security officer, I want the system to detect hardcoded secrets so that credentials are never exposed in infrastructure code. & High & 1 \\
+\hline
+US-05 & As a security officer, I want the system to detect publicly accessible S3 buckets so that data exposure is prevented. & High & 1 \\
+\hline
+US-06 & As a security officer, I want the system to detect insecure security groups so that unrestricted network access is flagged. & High & 1 \\
+\hline
+US-07 & As a DevOps engineer, I want an ALLOW/BLOCK decision based on severity so that I can quickly see if the code is ready to deploy. & High & 1 \\
+\hline
+US-08 & As a security officer, I want comprehensive AWS policies (S3, EC2, RDS, IAM, VPC, CloudTrail) so that cloud resources are thoroughly checked. & High & 2 \\
+\hline
+US-09 & As a security officer, I want extended Docker and Kubernetes policies so that container configurations are fully covered. & High & 2 \\
+\hline
+US-10 & As a DevOps engineer, I want a configurable severity threshold so that I can control which violations trigger a BLOCK. & Medium & 2 \\
+\hline
+US-11 & As a DevOps engineer, I want to scan only changed lines (diff mode) so that existing code does not create noise. & Medium & 2 \\
+\hline
+US-12 & As a DevOps engineer, I want a web dashboard to scan code interactively so that I can see results without using the command line. & Medium & 3 \\
+\hline
+US-13 & As a DevOps engineer, I want automatic fixing of common vulnerabilities so that I can fix issues with one click. & High & 3 \\
+\hline
+US-14 & As a security officer, I want HTML and PDF compliance reports so that I can share audit results with stakeholders. & Medium & 3 \\
+\hline
+US-15 & As a DevOps engineer, I want scan history stored permanently so that I can track security posture over time. & Low & 3 \\
+\hline
+US-16 & As a DevOps engineer, I want CI/CD pipeline integration with Jenkins so that insecure code is automatically blocked before deployment. & High & 4 \\
+\hline
+US-17 & As a developer, I want real-time security scanning in VS Code so that I get feedback before committing code. & High & 4 \\
+\hline
+US-18 & As an operations engineer, I want Prometheus metrics and Grafana dashboards so that I can monitor security posture in real time. & Medium & 4 \\
+\hline
+\end{tabularx}
+\caption{Product backlog --- user stories.}
+\label{tab:product-backlog}
+\end{table}
+
+
+% ────────────────────────────────────────────────────────────────────────────
+\section{Global Use Case Diagram}
+\label{sec:usecase}
+
+The global use case diagram shows all the interactions between the four actors and the main features of the system. It gives a high-level view of what the microservice does.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    usecase/.style = {
+        draw, thick, ellipse,
+        minimum width=2.8cm, minimum height=0.9cm,
+        align=center, font=\scriptsize
+    },
+    arr/.style = {-, thick},
+    % Stick figure command via pic
+]
+
+% Stick figure helper
+\tikzset{
+  actor pic/.pic={
+    \draw[thick] (0,0.3) circle (0.18cm);
+    \draw[thick] (0,0.12) -- (0,-0.3);
+    \draw[thick] (-0.25,0) -- (0.25,0);
+    \draw[thick] (0,-0.3) -- (-0.18,-0.6);
+    \draw[thick] (0,-0.3) -- (0.18,-0.6);
+  }
+}
+
+% System boundary
+\draw[thick, rounded corners=8pt, fill=blue!3]
+    (1.5, -7) rectangle (9.5, 1);
+\node[font=\small\bfseries, anchor=north west] at (1.7, 0.9) {DevSecOps Policy Service};
+
+% Use cases
+\node[usecase, fill=white] (scan)    at (5.5,  0)    {Scan Code};
+\node[usecase, fill=white] (fix)     at (5.5, -1.4)  {Auto-Fix\\Violations};
+\node[usecase, fill=white] (report)  at (5.5, -2.8)  {Generate\\Report};
+\node[usecase, fill=white] (dash)    at (5.5, -4.2)  {View\\Dashboard};
+\node[usecase, fill=white] (history) at (5.5, -5.6)  {View Scan\\History};
+\node[usecase, fill=white] (metrics) at (5.5, -6.7)  {View Metrics};
+
+% Left actors — Developer
+\pic at (-0.8, -0.8) {actor pic};
+\node[font=\scriptsize\bfseries, align=center] at (-0.8, -1.6) {Developer};
+
+% Left actors — DevOps Engineer
+\pic at (-0.8, -3.5) {actor pic};
+\node[font=\scriptsize\bfseries, align=center] at (-0.8, -4.3) {DevOps Eng.};
+
+% Right actors — Security Officer
+\pic at (12.2, -1.8) {actor pic};
+\node[font=\scriptsize\bfseries, align=center] at (12.2, -2.6) {Security Off.};
+
+% Right actors — Jenkins
+\pic at (12.2, -5.4) {actor pic};
+\node[font=\scriptsize\bfseries, align=center] at (12.2, -6.2) {Jenkins};
+
+% Developer connections (from feet position ~y=-1.4)
+\draw[arr] (-0.8, -1.4) -- (scan);
+\draw[arr] (-0.8, -1.4) -- (fix);
+
+% DevOps connections
+\draw[arr] (-0.8, -4.0) -- (scan);
+\draw[arr] (-0.8, -4.0) -- (fix);
+\draw[arr] (-0.8, -4.0) -- (dash);
+\draw[arr] (-0.8, -4.0) -- (history);
+
+% Security Officer connections
+\draw[arr] (12.2, -2.4) -- (scan);
+\draw[arr] (12.2, -2.4) -- (report);
+\draw[arr] (12.2, -2.4) -- (metrics);
+
+% Jenkins connections
+\draw[arr] (12.2, -6.0) -- (scan);
+
+\end{tikzpicture}
+\caption{Global use case diagram showing actors and their interactions with the system.}
+\label{fig:global-usecase}
+\end{figure}
+
+
+% ────────────────────────────────────────────────────────────────────────────
+\section{Application Architecture}
+\label{sec:architecture}
+
+\subsection{Four-Layer Architecture}
+
+The microservice is organized into four clearly separated layers, each with a specific job. This design keeps things clean and makes sure dependencies only flow in one direction~\cite{martin2017cleanarch}.
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{|c|l|X|}
+\hline
+\textbf{Layer} & \textbf{Module} & \textbf{Responsibility} \\
+\hline
+1 — API & \texttt{api/routes.py} & Handles HTTP requests and responses, validates input using Pydantic schemas, and coordinates the analysis pipeline. \\
+\hline
+2 — Parser & \texttt{engine/parser.py} & Implements format-specific parsers (Terraform via \texttt{python-hcl2}, Dockerfile via regex, Kubernetes via PyYAML) that turn raw code into structured data. \\
+\hline
+3 — Normalizer & \texttt{engine/normalizer.py} & Converts the different parser outputs into a single unified \texttt{NormalizedCode} model, which simplifies everything downstream by 67\%. \\
+\hline
+4 — Policy Engine & \texttt{engine/policy\_engine.py} & Runs all 103 policies against the normalized code, applies the severity threshold, and produces the final ALLOW/BLOCK decision. \\
+\hline
+\end{tabularx}
+\caption{Four-layer architecture of the microservice.}
+\label{tab:layers}
+\end{table}
+
+The key insight here is the \textbf{Normalizer layer} (Layer~3). It acts as a bridge between the format-specific parsers and the format-agnostic policy engine. Without it, each policy would need to understand every supported format, creating $N \times M$ complexity (where $N$ is the number of policies and $M$ is the number of formats). The normalizer brings this down to $N + M$.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    layer/.style = {
+        draw, thick, rounded corners=4pt,
+        minimum width=12cm, minimum height=1.2cm,
+        align=center, font=\small\bfseries
+    },
+    arr/.style = {-{Stealth[length=6pt]}, thick, color=gray!70}
+]
+
+\node[layer, fill=blue!15] (l1) at (0,0)
+    {Layer 1 --- API \ \ (\texttt{api/routes.py})};
+\node[layer, fill=green!15] (l2) at (0,-2)
+    {Layer 2 --- Parser \ \ (\texttt{engine/parser.py})};
+\node[layer, fill=orange!15] (l3) at (0,-4)
+    {Layer 3 --- Normalizer \ \ (\texttt{engine/normalizer.py})};
+\node[layer, fill=red!15] (l4) at (0,-6)
+    {Layer 4 --- Policy Engine \ \ (\texttt{engine/policy\_engine.py})};
+
+\draw[arr] (l1) -- node[right, font=\scriptsize] {parsed request} (l2);
+\draw[arr] (l2) -- node[right, font=\scriptsize] {structured dict} (l3);
+\draw[arr] (l3) -- node[right, font=\scriptsize] {NormalizedCode} (l4);
+
+% Return arrow
+\draw[arr, dashed, color=blue!60] (l4.west) -- ++(-1.5,0) |- node[left, font=\scriptsize, pos=0.25] {ALLOW/BLOCK} (l1.west);
+
+% Format labels on Parser layer
+\node[font=\tiny, anchor=north] at (-3.5,-2.7) {TerraformParser};
+\node[font=\tiny, anchor=north] at (0,-2.7) {DockerfileParser};
+\node[font=\tiny, anchor=north] at (3.5,-2.7) {KubernetesParser};
+
+\end{tikzpicture}
+\caption{Four-layer architecture of the microservice with data flow.}
+\label{fig:four-layer-arch}
+\end{figure}
+
+\subsection{Global System Architecture}
+
+The complete system is made up of several services working together. Figure~\ref{fig:global-arch} shows the overall deployment setup.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    component/.style = {
+        draw, thick, rounded corners=3pt,
+        minimum width=2.8cm, minimum height=1cm,
+        align=center, font=\small\bfseries
+    },
+    arr/.style = {-{Stealth[length=5pt]}, thick},
+    darr/.style = {{Stealth[length=5pt]}-{Stealth[length=5pt]}, thick}
+]
+
+% Core service
+\node[component, fill=blue!20] (api) at (0,0) {Policy Service\\\tiny localhost:8000};
+
+% Clients on the left
+\node[component, fill=purple!15] (vscode) at (-5, 2) {VS Code\\Extension};
+\node[component, fill=cyan!15] (dashboard) at (-5, 0) {Web\\Dashboard};
+\node[component, fill=yellow!15] (jenkins) at (-5, -2) {Jenkins\\\tiny localhost:8080};
+
+% Backend on the right
+\node[component, fill=gray!15] (sqlite) at (5, 0) {SQLite\\Database};
+\node[component, fill=orange!15] (prom) at (5, -2) {Prometheus\\\tiny localhost:9090};
+\node[component, fill=green!15] (grafana) at (5, -4) {Grafana\\\tiny localhost:3001};
+\node[component, fill=red!10] (gitea) at (-5, -4) {Gitea\\\tiny localhost:3000};
+
+% Arrows
+\draw[darr] (vscode) -- node[above, font=\tiny] {HTTP} (api);
+\draw[darr] (dashboard) -- node[above, font=\tiny] {HTTP} (api);
+\draw[darr] (jenkins) -- node[above, font=\tiny] {HTTP} (api);
+\draw[arr] (api) -- node[above, font=\tiny] {store} (sqlite);
+\draw[arr] (prom) -- node[left, font=\tiny] {scrape} (api);
+\draw[arr] (grafana) -- node[right, font=\tiny] {query} (prom);
+\draw[arr] (jenkins) -- node[left, font=\tiny] {Poll SCM} (gitea);
+
+\end{tikzpicture}
+\caption{Global system architecture showing all integrated services.}
+\label{fig:global-arch}
+\end{figure}
+
+The main components and how they connect:
+
+\begin{itemize}[leftmargin=1.5cm]
+  \item \textbf{Policy Service} (\texttt{localhost:8000}): The core FastAPI application that serves both the REST API and the web dashboard.
+  \item \textbf{SQLite Database}: An embedded database that stores scan history, violation details, and statistics.
+  \item \textbf{VS Code Extension}: A client-side extension that talks to the policy service over HTTP.
+  \item \textbf{Jenkins} (\texttt{localhost:8080}): An automation server that runs CI/CD pipelines calling the policy service API.
+  \item \textbf{Gitea} (\texttt{localhost:3000}): A self-hosted Git service that provides version control without depending on external services.
+  \item \textbf{Prometheus} (\texttt{localhost:9090}): Collects metrics from the \texttt{/metrics/prometheus} endpoint every 15~seconds.
+  \item \textbf{Grafana} (\texttt{localhost:3001}): Displays Prometheus metrics through preconfigured dashboards.
+\end{itemize}
+
+
+% ────────────────────────────────────────────────────────────────────────────
+\section{Class Diagram}
+\label{sec:classdiagram}
+
+The class diagram shows the main classes, their attributes, methods, and relationships across the four layers.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    class/.style = {
+        draw, thick, rectangle,
+        minimum width=3.2cm,
+        align=center, font=\scriptsize,
+        inner sep=3pt
+    },
+    arr/.style = {-{Stealth[length=5pt]}, thick},
+    inh/.style = {-{Triangle[open, length=6pt]}, thick},
+    comp/.style = {-{Diamond[open, length=6pt]}, thick}
+]
+
+% BasePolicy (abstract)
+\node[class, fill=red!10] (base) at (0, 0) {
+    \textbf{\guillemotleft abstract\guillemotright}\\\textbf{BasePolicy}\\
+    \hrulefill\\
+    +rule\_id: str\\
+    +severity: PolicySeverity\\
+    \hrulefill\\
+    +check(code): list
+};
+
+% Concrete policies
+\node[class, fill=red!5] (p1) at (-3.5, -3) {PublicS3\\BucketPolicy};
+\node[class, fill=red!5] (p2) at (0, -3) {Hardcoded\\SecretPolicy};
+\node[class, fill=red!5] (p3) at (3.5, -3) {\dots\\ (103 total)};
+
+\draw[inh] (p1) -- (base);
+\draw[inh] (p2) -- (base);
+\draw[inh] (p3) -- (base);
+
+% PolicyEngine
+\node[class, fill=blue!10] (engine) at (7, 0) {
+    \textbf{PolicyEngine}\\
+    \hrulefill\\
+    -policies: list\\
+    \hrulefill\\
+    +analyze(code, threshold): Result
+};
+
+\draw[comp] (engine) -- node[above, font=\tiny] {1..*} (base);
+
+% Parsers
+\node[class, fill=green!10] (tf) at (-4, 3.5) {Terraform\\Parser};
+\node[class, fill=green!10] (dk) at (0, 3.5) {Dockerfile\\Parser};
+\node[class, fill=green!10] (k8) at (4, 3.5) {Kubernetes\\Parser};
+
+% Normalizer
+\node[class, fill=orange!10] (norm) at (0, 5.5) {
+    \textbf{Normalizer}\\
+    \hrulefill\\
+    +normalize(parsed): NormalizedCode
+};
+
+% NormalizedCode
+\node[class, fill=yellow!10] (nc) at (7, 3.5) {
+    \textbf{NormalizedCode}\\
+    \hrulefill\\
+    +code\_type: str\\
+    +resources: list[Resource]
+};
+
+% AutoFixer
+\node[class, fill=purple!10] (fixer) at (7, 5.5) {
+    \textbf{AutoFixer}\\
+    \hrulefill\\
+    +fix(type, code): FixResult
+};
+
+% Arrows
+\draw[arr] (norm) -- (tf);
+\draw[arr] (norm) -- (dk);
+\draw[arr] (norm) -- (k8);
+\draw[arr] (norm) -- (nc);
+\draw[arr] (engine) -- (nc);
+
+\end{tikzpicture}
+\caption{Global class diagram of the microservice showing the main classes and their relationships.}
+\label{fig:class-diagram}
+\end{figure}
+
+
+% ────────────────────────────────────────────────────────────────────────────
+\section{Sprint Planning}
+\label{sec:sprint-planning}
+
+Based on the product backlog and the architecture, we distributed the user stories across four sprints. Table~\ref{tab:sprint-planning} shows the detailed allocation.
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{|c|X|c|X|}
+\hline
+\textbf{Sprint} & \textbf{Theme} & \textbf{User Stories} & \textbf{Key Deliverables} \\
+\hline
+1 & Core Microservice & US-01 to US-07 & FastAPI REST API, 3 parsers, normalizer, 12 base policies, automated tests. \\
+\hline
+2 & Policy Expansion & US-08 to US-11 & 91 additional policies (total 103), severity threshold, diff-only mode. \\
+\hline
+3 & Dashboard \& Remediation & US-12 to US-15 & Web dashboard, auto-fix engine, HTML/PDF reports, SQLite history. \\
+\hline
+4 & Integration \& Monitoring & US-16 to US-18 & Jenkins CI/CD, Gitea, VS Code extension, Prometheus, Grafana. \\
+\hline
+\end{tabularx}
+\caption{Sprint planning --- user story allocation.}
+\label{tab:sprint-planning}
+\end{table}
+
+
+% ────────────────────────────────────────────────────────────────────────────
+\section{Development Environment}
+\label{sec:environment}
+
+\subsection{Hardware Environment}
+
+The project was developed and tested on the following hardware:
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+\textbf{Component} & \textbf{Specification} \\
+\hline
+\multicolumn{2}{|l|}{\textbf{Host Machine (Windows)}} \\
+\hline
+Processor & AMD Ryzen 7 \\
+\hline
+RAM & 16\,GB DDR4 \\
+\hline
+Storage & 512\,GB SSD \\
+\hline
+Operating System & Windows 11 \\
+\hline
+\multicolumn{2}{|l|}{\textbf{Development VM (Ubuntu 22.04 LTS)}} \\
+\hline
+vCPUs & 4 cores \\
+\hline
+RAM & 8\,GB \\
+\hline
+Storage & 50\,GB virtual disk \\
+\hline
+OS & Ubuntu 22.04 LTS (64-bit) \\
+\hline
+\end{tabularx}
+\caption{Hardware environment.}
+\label{tab:hardware}
+\end{table}
+
+\subsection{Software Environment}
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{|l|l|X|}
+\hline
+\textbf{Technology} & \textbf{Version} & \textbf{Purpose} \\
+\hline
+Python         & 3.10       & Main programming language for the microservice. \\
+\hline
+FastAPI        & 0.104.1    & Web framework for the REST API~\cite{fastapi2024docs}. \\
+\hline
+Pydantic       & 2.5.0      & Data validation for request/response schemas~\cite{pydantic2024docs}. \\
+\hline
+Uvicorn        & 0.24.0     & ASGI server for running the FastAPI application. \\
+\hline
+python-hcl2    & 4.3.2      & Parser for Terraform HCL files. \\
+\hline
+PyYAML         & 6.0.1      & Parser for Kubernetes YAML files. \\
+\hline
+SQLite         & 3.x        & Embedded database for scan history. \\
+\hline
+Node.js        & 18.x       & Runtime for the VS Code extension. \\
+\hline
+Jenkins        & 2.x        & CI/CD automation server~\cite{jenkins2024docs}. \\
+\hline
+Gitea          & Latest     & Self-hosted Git server~\cite{gitea2024docs}. \\
+\hline
+Prometheus     & Latest     & Metrics collection and time-series database~\cite{prometheus2024docs}. \\
+\hline
+Grafana        & Latest     & Metrics visualization and dashboards~\cite{grafana2024docs}. \\
+\hline
+Docker         & Latest     & Containerization of the microservice and monitoring stack. \\
+\hline
+Docker Compose & Latest     & Multi-container setup for Prometheus and Grafana. \\
+\hline
+VS Code        & Latest     & IDE used for development and hosting the extension~\cite{vscode2024api}. \\
+\hline
+pytest         & 7.4.3      & Testing framework for the automated test suite. \\
+\hline
+Git / GitHub   & Latest     & Version control and remote repository. \\
+\hline
+\end{tabularx}
+\caption{Software environment and technology stack.}
+\label{tab:software}
+\end{table}
+
+
+% ────────────────────────────────────────────────────────────────────────────
+\section{Conclusion}
+
+This chapter completed the planning phase of the project. We identified the four actors and their roles, captured thirteen functional and six non-functional requirements, organized eighteen user stories into a prioritized product backlog, and described the four-layer architecture in detail. The sprint planning distributed the work across four sprints covering the full project period from February~15 to May~15,~2026, and we listed all the tools and technologies used. The next four chapters present the implementation of each sprint.
