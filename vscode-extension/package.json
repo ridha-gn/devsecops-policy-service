@@ -7,7 +7,10 @@
   "engines": {
     "vscode": "^1.80.0"
   },
-  "categories": ["Linters", "Other"],
+  "categories": [
+    "Linters",
+    "Other"
+  ],
   "activationEvents": [
     "onLanguage:terraform",
     "onLanguage:dockerfile",
@@ -32,7 +35,12 @@
         "devsecops.blockThreshold": {
           "type": "string",
           "default": "LOW",
-          "enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"],
+          "enum": [
+            "LOW",
+            "MEDIUM",
+            "HIGH",
+            "CRITICAL"
+          ],
           "description": "Minimum severity level to show as errors"
         }
       }
@@ -50,5 +58,8 @@
   },
   "devDependencies": {
     "@types/vscode": "^1.80.0"
+  },
+  "dependencies": {
+    "@vscode/vsce": "^2.32.0"
   }
 }

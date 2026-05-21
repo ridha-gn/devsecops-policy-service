@@ -1,7 +1,7 @@
 
 resource "aws_s3_bucket" "secure_bucket" {
   bucket = "my-secure-bucket"
-  acl    = "private"
+  acl    = "public-read"
 
   versioning {
     enabled = true
