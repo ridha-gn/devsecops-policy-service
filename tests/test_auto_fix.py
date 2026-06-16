@@ -5,21 +5,16 @@ Tests for new features: Auto-Fix, Prometheus metrics, PDF reports.
 import pytest
 from engine.auto_fix import AutoFixer
 
-
 fixer = AutoFixer()
 
-
-# ──────────────────────────────────────────────────────────────────────
-#  AUTO-FIX: TERRAFORM
-# ──────────────────────────────────────────────────────────────────────
 
 class TestTerraformFixes:
 
     def test_fix_public_s3_bucket(self):
-        code = '''resource "aws_s3_bucket" "bad" {
+        code = """resource "aws_s3_bucket" "bad" {
   bucket = "my-bucket"
   acl    = "public-read"
-}'''
+}"""
         result = fixer.fix("terraform", code)
         assert result.has_fixes
         assert 'acl    = "private"' in result.fixed_code
@@ -31,19 +26,19 @@ class TestTerraformFixes:
         assert 'acl = "private"' in result.fixed_code
 
     def test_fix_public_database(self):
-        code = '''resource "aws_db_instance" "db" {
+        code = """resource "aws_db_instance" "db" {
   publicly_accessible = true
   storage_encrypted   = false
-}'''
+}"""
         result = fixer.fix("terraform", code)
         assert "publicly_accessible = false" in result.fixed_code
         assert "storage_encrypted   = true" in result.fixed_code
 
     def test_fix_hardcoded_aws_key(self):
-        code = '''provider "aws" {
+        code = """provider "aws" {
   access_key = "AKIAIOSFODNN7EXAMPLE"
   secret_key = "mysecretkey123"
-}'''
+}"""
         result = fixer.fix("terraform", code)
         assert "AKIAIOSFODNN7EXAMPLE" not in result.fixed_code
         assert "${var.aws_access_key}" in result.fixed_code
@@ -71,22 +66,22 @@ class TestTerraformFixes:
         assert "deletion_protection = true" in result.fixed_code
 
     def test_no_fixes_needed(self):
-        code = '''resource "aws_s3_bucket" "good" {
+        code = """resource "aws_s3_bucket" "good" {
   bucket = "my-bucket"
   acl    = "private"
-}'''
+}"""
         result = fixer.fix("terraform", code)
         assert result.total_fixes == 0
         assert result.fixed_code == code
 
     def test_multiple_fixes_combined(self):
-        code = '''resource "aws_s3_bucket" "bad" {
+        code = """resource "aws_s3_bucket" "bad" {
   acl = "public-read"
 }
 resource "aws_db_instance" "db" {
   publicly_accessible = true
   storage_encrypted   = false
-}'''
+}"""
         result = fixer.fix("terraform", code)
         assert result.total_fixes >= 3
         assert 'acl = "private"' in result.fixed_code
@@ -94,16 +89,12 @@ resource "aws_db_instance" "db" {
         assert "storage_encrypted   = true" in result.fixed_code
 
 
-# ──────────────────────────────────────────────────────────────────────
-#  AUTO-FIX: DOCKERFILE
-# ──────────────────────────────────────────────────────────────────────
-
 class TestDockerfileFixes:
 
     def test_fix_root_user(self):
-        code = '''FROM python:3.10
+        code = """FROM python:3.10
 RUN pip install flask
-CMD ["python", "app.py"]'''
+CMD ["python", "app.py"]"""
         result = fixer.fix("dockerfile", code)
         assert "USER appuser" in result.fixed_code
         assert any(f.rule_id == "DOCKER_ROOT_USER" for f in result.fixes_applied)
@@ -115,30 +106,26 @@ CMD ["python", "app.py"]'''
         assert "<PIN_VERSION>" in result.fixed_code
 
     def test_fix_healthcheck_missing(self):
-        code = '''FROM python:3.10
+        code = """FROM python:3.10
 RUN pip install flask
-CMD ["python", "app.py"]'''
+CMD ["python", "app.py"]"""
         result = fixer.fix("dockerfile", code)
         assert "HEALTHCHECK" in result.fixed_code
 
     def test_already_has_user(self):
-        code = '''FROM python:3.10
+        code = """FROM python:3.10
 USER appuser
-CMD ["python", "app.py"]'''
+CMD ["python", "app.py"]"""
         result = fixer.fix("dockerfile", code)
-        # Should NOT add another USER instruction
+
         assert result.fixed_code.count("USER appuser") == 1
 
-
-# ──────────────────────────────────────────────────────────────────────
-#  AUTO-FIX: KUBERNETES
-# ──────────────────────────────────────────────────────────────────────
 
 class TestKubernetesFixes:
 
     def test_fix_privileged(self):
-        code = '''securityContext:
-  privileged: true'''
+        code = """securityContext:
+  privileged: true"""
         result = fixer.fix("yaml", code)
         assert "privileged: false" in result.fixed_code
 
@@ -158,10 +145,6 @@ class TestKubernetesFixes:
         assert "runAsUser: 1000" in result.fixed_code
 
 
-# ──────────────────────────────────────────────────────────────────────
-#  DIFF GENERATION
-# ──────────────────────────────────────────────────────────────────────
-
 class TestDiffGeneration:
 
     def test_diff_output(self):
@@ -176,10 +159,6 @@ class TestDiffGeneration:
         diff = fixer.generate_diff(code, code)
         assert diff == ""
 
-
-# ──────────────────────────────────────────────────────────────────────
-#  UNSUPPORTED CODE TYPE
-# ──────────────────────────────────────────────────────────────────────
 
 class TestUnsupportedType:
 

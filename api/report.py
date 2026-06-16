@@ -59,31 +59,31 @@ def generate_html_report(filename: str, code_type: str, decision: str,
 <title>Security Report — {filename}</title>
 <style>
   @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Syne:wght@700;800&display=swap");
-  *{{box-sizing:border-box;margin:0;padding:0}}
-  body{{background:#080c10;color:#c9d1d9;font-family:"JetBrains Mono",monospace;font-size:13px;padding:40px;min-height:100vh}}
-  .report{{max-width:860px;margin:0 auto}}
-  .header{{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:32px;padding-bottom:24px;border-bottom:1px solid #1c2433}}
-  .logo{{font-family:"Syne",sans-serif;font-size:18px;font-weight:800;color:#fff;letter-spacing:.05em}}
-  .logo span{{color:#00e5ff}}
-  .meta{{text-align:right;font-size:11px;color:#4a5568;line-height:1.8}}
-  .decision-box{{padding:20px 28px;border-radius:6px;border:1px solid;margin-bottom:28px;display:flex;align-items:center;justify-content:space-between}}
-  .decision-label{{font-family:"Syne",sans-serif;font-size:28px;font-weight:800}}
-  .decision-sub{{font-size:12px;color:#4a5568;margin-top:4px}}
-  .stats{{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:28px}}
-  .stat{{background:#0d1117;border:1px solid #1c2433;border-radius:6px;padding:14px;text-align:center}}
-  .stat-val{{font-family:"Syne",sans-serif;font-size:24px;font-weight:800;margin-bottom:4px}}
-  .stat-label{{font-size:10px;color:#4a5568;text-transform:uppercase;letter-spacing:.1em}}
-  .section-title{{font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:#4a5568;margin-bottom:12px}}
-  .violation{{border-radius:4px;padding:14px;margin-bottom:10px}}
-  .v-header{{display:flex;align-items:center;gap:10px;margin-bottom:8px}}
-  .v-rule{{font-weight:600;font-size:13px;color:#fff}}
-  .v-sev{{font-size:10px;font-weight:700;letter-spacing:.08em}}
-  .v-line{{font-size:10px;color:#4a5568;margin-left:auto}}
-  .v-msg{{font-size:12px;color:#c9d1d9;margin-bottom:6px;line-height:1.5}}
-  .v-rec{{font-size:11px;color:#4a5568;line-height:1.5;padding:8px;background:rgba(255,255,255,.03);border-radius:3px}}
-  .no-violations{{text-align:center;padding:40px;color:#06d6a0;font-size:14px}}
-  .footer{{margin-top:32px;padding-top:16px;border-top:1px solid #1c2433;font-size:10px;color:#4a5568;text-align:center}}
-  @media print{{body{{background:#fff;color:#000}}}}
+  *{ box-sizing:border-box;margin:0;padding:0} 
+  body{ background:#080c10;color:#c9d1d9;font-family:"JetBrains Mono",monospace;font-size:13px;padding:40px;min-height:100vh} 
+  .report{ max-width:860px;margin:0 auto} 
+  .header{ display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:32px;padding-bottom:24px;border-bottom:1px solid #1c2433} 
+  .logo{ font-family:"Syne",sans-serif;font-size:18px;font-weight:800;color:#fff;letter-spacing:.05em} 
+  .logo span{ color:#00e5ff} 
+  .meta{ text-align:right;font-size:11px;color:#4a5568;line-height:1.8} 
+  .decision-box{ padding:20px 28px;border-radius:6px;border:1px solid;margin-bottom:28px;display:flex;align-items:center;justify-content:space-between} 
+  .decision-label{ font-family:"Syne",sans-serif;font-size:28px;font-weight:800} 
+  .decision-sub{ font-size:12px;color:#4a5568;margin-top:4px} 
+  .stats{ display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:28px} 
+  .stat{ background:#0d1117;border:1px solid #1c2433;border-radius:6px;padding:14px;text-align:center} 
+  .stat-val{ font-family:"Syne",sans-serif;font-size:24px;font-weight:800;margin-bottom:4px} 
+  .stat-label{ font-size:10px;color:#4a5568;text-transform:uppercase;letter-spacing:.1em} 
+  .section-title{ font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:#4a5568;margin-bottom:12px} 
+  .violation{ border-radius:4px;padding:14px;margin-bottom:10px} 
+  .v-header{ display:flex;align-items:center;gap:10px;margin-bottom:8px} 
+  .v-rule{ font-weight:600;font-size:13px;color:#fff} 
+  .v-sev{ font-size:10px;font-weight:700;letter-spacing:.08em} 
+  .v-line{ font-size:10px;color:#4a5568;margin-left:auto} 
+  .v-msg{ font-size:12px;color:#c9d1d9;margin-bottom:6px;line-height:1.5} 
+  .v-rec{ font-size:11px;color:#4a5568;line-height:1.5;padding:8px;background:rgba(255,255,255,.03);border-radius:3px} 
+  .no-violations{ text-align:center;padding:40px;color:#06d6a0;font-size:14px} 
+  .footer{ margin-top:32px;padding-top:16px;border-top:1px solid #1c2433;font-size:10px;color:#4a5568;text-align:center} 
+  @media print{ body{ background:#fff;color:#000} } 
 </style>
 </head>
 <body>

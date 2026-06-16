@@ -11,6 +11,7 @@ Endpoints:
   DELETE /users/{id}            – Super Admin only
   GET  /users/me                – any authenticated user
 """
+
 import os
 import sqlite3
 from datetime import datetime
@@ -19,27 +20,30 @@ from typing import List
 from fastapi import APIRouter, HTTPException, Depends, status
 
 from api.auth import (
-    UserRole, hash_password, verify_password,
-    create_access_token, require_roles, get_current_user,
+    UserRole,
+    hash_password,
+    verify_password,
+    create_access_token,
+    require_roles,
+    get_current_user,
 )
 from api.schemas import (
-    LoginRequest, TokenResponse,
-    UserCreate, UserOut, RoleUpdate,
+    LoginRequest,
+    TokenResponse,
+    UserCreate,
+    UserOut,
+    RoleUpdate,
 )
 
 router = APIRouter()
 
-DB_PATH = os.path.join(os.path.dirname(__file__), '..', 'scans.db')
+DB_PATH = os.path.join(os.path.dirname(__file__), "..", "scans.db")
 
-
-# ── DB helpers ────────────────────────────────────────────────────────────────
 
 def _get_by_username(username: str):
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
-    row = conn.execute(
-        "SELECT * FROM users WHERE username = ?", (username,)
-    ).fetchone()
+    row = conn.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
     conn.close()
     return dict(row) if row else None
 
@@ -47,14 +51,10 @@ def _get_by_username(username: str):
 def _get_by_id(user_id: int):
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
-    row = conn.execute(
-        "SELECT * FROM users WHERE id = ?", (user_id,)
-    ).fetchone()
+    row = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
     conn.close()
     return dict(row) if row else None
 
-
-# ── Authentication ────────────────────────────────────────────────────────────
 
 @router.post(
     "/auth/login",
@@ -74,11 +74,13 @@ async def login(request: LoginRequest):
             detail="Incorrect username or password.",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    token = create_access_token({
-        "sub":     user["username"],
-        "role":    user["role"],
-        "user_id": user["id"],
-    })
+    token = create_access_token(
+        {
+            "sub": user["username"],
+            "role": user["role"],
+            "user_id": user["id"],
+        }
+    )
     return TokenResponse(
         access_token=token,
         token_type="bearer",
@@ -86,8 +88,6 @@ async def login(request: LoginRequest):
         username=user["username"],
     )
 
-
-# ── Current user info ─────────────────────────────────────────────────────────
 
 @router.get(
     "/users/me",
@@ -109,8 +109,6 @@ async def get_me(current_user: dict = Depends(get_current_user)):
     )
 
 
-# ── User Management (Admin) ───────────────────────────────────────────────────
-
 @router.post(
     "/users",
     response_model=UserOut,
@@ -124,14 +122,21 @@ async def create_user(
 ):
     """Create a new user and assign them a role. **Super Admin only.**"""
     if _get_by_username(payload.username):
-        raise HTTPException(status_code=409, detail=f"Username '{payload.username}' already exists.")
+        raise HTTPException(
+            status_code=409, detail=f"Username '{payload.username}' already exists."
+        )
 
-    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.execute(
         "INSERT INTO users (username, hashed_pw, role, created_at, created_by) VALUES (?, ?, ?, ?, ?)",
-        (payload.username, hash_password(payload.password),
-         payload.role.value, now, current["username"]),
+        (
+            payload.username,
+            hash_password(payload.password),
+            payload.role.value,
+            now,
+            current["username"],
+        ),
     )
     user_id = cursor.lastrowid
     conn.commit()
@@ -190,10 +195,14 @@ async def update_role(
     if not user:
         raise HTTPException(status_code=404, detail="User not found.")
     if user["username"] == "admin":
-        raise HTTPException(status_code=403, detail="Cannot modify the root admin account.")
+        raise HTTPException(
+            status_code=403, detail="Cannot modify the root admin account."
+        )
 
     conn = sqlite3.connect(DB_PATH)
-    conn.execute("UPDATE users SET role = ? WHERE id = ?", (payload.role.value, user_id))
+    conn.execute(
+        "UPDATE users SET role = ? WHERE id = ?", (payload.role.value, user_id)
+    )
     conn.commit()
     conn.close()
 
@@ -220,7 +229,9 @@ async def delete_user(
     if not user:
         raise HTTPException(status_code=404, detail="User not found.")
     if user["username"] == "admin":
-        raise HTTPException(status_code=403, detail="Cannot delete the root admin account.")
+        raise HTTPException(
+            status_code=403, detail="Cannot delete the root admin account."
+        )
 
     conn = sqlite3.connect(DB_PATH)
     conn.execute("DELETE FROM users WHERE id = ?", (user_id,))

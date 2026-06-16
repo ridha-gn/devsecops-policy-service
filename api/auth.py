@@ -9,6 +9,7 @@ Roles (lowest → highest privilege):
   SECURITY_OFFICER – + Prometheus metrics, user listing
   SUPER_ADMIN      – full access + user management
 """
+
 import os
 from datetime import datetime, timedelta
 from typing import Optional
@@ -19,44 +20,39 @@ from jose import JWTError, jwt
 import bcrypt as _bcrypt
 from enum import Enum
 
-# ── Config ────────────────────────────────────────────────────────────────────
 SECRET_KEY = os.getenv(
-    "JWT_SECRET_KEY",
-    "devsecops-policy-service-secret-key-CHANGE-IN-PRODUCTION-2024"
+    "JWT_SECRET_KEY", "devsecops-policy-service-secret-key-CHANGE-IN-PRODUCTION-2024"
 )
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_HOURS = int(os.getenv("JWT_EXPIRE_HOURS", "8"))
 
-# ── Bearer token extraction ───────────────────────────────────────────────────
+
 bearer_scheme = HTTPBearer(auto_error=False)
 
 
-# ── Role Definitions ─────────────────────────────────────────────────────────
 class UserRole(str, Enum):
-    DEVELOPER        = "DEVELOPER"
-    DEVOPS_ENGINEER  = "DEVOPS_ENGINEER"
+    DEVELOPER = "DEVELOPER"
+    DEVOPS_ENGINEER = "DEVOPS_ENGINEER"
     SECURITY_OFFICER = "SECURITY_OFFICER"
-    SUPER_ADMIN      = "SUPER_ADMIN"
+    SUPER_ADMIN = "SUPER_ADMIN"
 
 
 ROLE_DISPLAY = {
-    UserRole.DEVELOPER:        "Developer",
-    UserRole.DEVOPS_ENGINEER:  "DevOps Engineer",
+    UserRole.DEVELOPER: "Developer",
+    UserRole.DEVOPS_ENGINEER: "DevOps Engineer",
     UserRole.SECURITY_OFFICER: "Security Officer",
-    UserRole.SUPER_ADMIN:      "Super Admin",
+    UserRole.SUPER_ADMIN: "Super Admin",
 }
 
 
-# ── Password helpers ──────────────────────────────────────────────────────────
 def verify_password(plain: str, hashed: str) -> bool:
-    return _bcrypt.checkpw(plain.encode('utf-8'), hashed.encode('utf-8'))
+    return _bcrypt.checkpw(plain.encode("utf-8"), hashed.encode("utf-8"))
 
 
 def hash_password(plain: str) -> str:
-    return _bcrypt.hashpw(plain.encode('utf-8'), _bcrypt.gensalt()).decode('utf-8')
+    return _bcrypt.hashpw(plain.encode("utf-8"), _bcrypt.gensalt()).decode("utf-8")
 
 
-# ── Token helpers ─────────────────────────────────────────────────────────────
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     to_encode = data.copy()
     expire = datetime.utcnow() + (
@@ -77,7 +73,6 @@ def _decode_token(token: str) -> dict:
         )
 
 
-# ── FastAPI Dependencies ──────────────────────────────────────────────────────
 async def get_current_user(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme),
 ) -> dict:
@@ -90,8 +85,8 @@ async def get_current_user(
         )
     payload = _decode_token(credentials.credentials)
     username = payload.get("sub")
-    role     = payload.get("role")
-    user_id  = payload.get("user_id")
+    role = payload.get("role")
+    user_id = payload.get("user_id")
     if not username or not role:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -107,6 +102,7 @@ def require_roles(*allowed_roles: UserRole):
     or as a parameter:
         current = Depends(require_roles(UserRole.DEVOPS_ENGINEER, UserRole.SUPER_ADMIN))
     """
+
     async def _checker(
         current_user: dict = Depends(get_current_user),
     ) -> dict:
@@ -121,4 +117,5 @@ def require_roles(*allowed_roles: UserRole):
                 ),
             )
         return current_user
+
     return _checker

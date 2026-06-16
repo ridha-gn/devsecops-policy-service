@@ -1,8 +1,14 @@
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import HTMLResponse, PlainTextResponse, Response
 from api.schemas import (
-    AnalyzeRequest, AnalyzeResponse, Decision, Violation, Severity,
-    FixRequest, FixResponse, FixDetail,
+    AnalyzeRequest,
+    AnalyzeResponse,
+    Decision,
+    Violation,
+    Severity,
+    FixRequest,
+    FixResponse,
+    FixDetail,
 )
 from api.history import save_scan, get_history, get_stats
 from api.report import generate_html_report
@@ -14,9 +20,9 @@ router = APIRouter()
 engine = PolicyEngine()
 auto_fixer = AutoFixer()
 
-SEV_ORDER = {'CRITICAL': 4, 'HIGH': 3, 'MEDIUM': 2, 'LOW': 1, 'INFO': 0}
+SEV_ORDER = {"CRITICAL": 4, "HIGH": 3, "MEDIUM": 2, "LOW": 1, "INFO": 0}
 
-# ── All roles that can log in ─────────────────────────────────────────────────
+
 ALL_ROLES = (
     UserRole.DEVELOPER,
     UserRole.DEVOPS_ENGINEER,
@@ -24,8 +30,6 @@ ALL_ROLES = (
     UserRole.SUPER_ADMIN,
 )
 
-
-# ── ANALYZE ───────────────────────────────────────────────────────────────────
 
 @router.post(
     "/analyze",
@@ -63,7 +67,8 @@ async def analyze_code(
         ]
 
         blocking = [
-            v for v in violations_out
+            v
+            for v in violations_out
             if SEV_ORDER.get(v.severity.value, 0) >= threshold_level
         ]
         decision = Decision.BLOCK if blocking else Decision.ALLOW
@@ -93,8 +98,6 @@ async def analyze_code(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
-# ── AUTO-FIX ──────────────────────────────────────────────────────────────────
 
 @router.post(
     "/fix",
@@ -141,8 +144,6 @@ async def fix_code(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ── REPORTS ───────────────────────────────────────────────────────────────────
-
 @router.get(
     "/report/{filename}",
     tags=["📄 Reports"],
@@ -158,16 +159,17 @@ async def get_report(
         raise HTTPException(status_code=404, detail="No scan found.")
 
     import json
+
     last = history[0]
-    violations = json.loads(last['violations_json'])
+    violations = json.loads(last["violations_json"])
 
     html = generate_html_report(
-        filename=last['filename'],
-        code_type=last['code_type'],
-        decision=last['decision'],
+        filename=last["filename"],
+        code_type=last["code_type"],
+        decision=last["decision"],
         violations=violations,
-        scan_time_ms=last['scan_time_ms'],
-        block_threshold=last['block_threshold'],
+        scan_time_ms=last["scan_time_ms"],
+        block_threshold=last["block_threshold"],
         explanation=f"{last['violations_count']} violation(s) found",
     )
     return HTMLResponse(content=html)
@@ -180,11 +182,13 @@ async def get_report(
 )
 async def get_report_pdf(
     filename: str,
-    _: dict = Depends(require_roles(
-        UserRole.DEVOPS_ENGINEER,
-        UserRole.SECURITY_OFFICER,
-        UserRole.SUPER_ADMIN,
-    )),
+    _: dict = Depends(
+        require_roles(
+            UserRole.DEVOPS_ENGINEER,
+            UserRole.SECURITY_OFFICER,
+            UserRole.SUPER_ADMIN,
+        )
+    ),
 ):
     """
     Download a PDF security report.
@@ -195,22 +199,24 @@ async def get_report_pdf(
         raise HTTPException(status_code=404, detail="No scan found.")
 
     import json
+
     last = history[0]
-    violations = json.loads(last['violations_json'])
+    violations = json.loads(last["violations_json"])
 
     html = generate_html_report(
-        filename=last['filename'],
-        code_type=last['code_type'],
-        decision=last['decision'],
+        filename=last["filename"],
+        code_type=last["code_type"],
+        decision=last["decision"],
         violations=violations,
-        scan_time_ms=last['scan_time_ms'],
-        block_threshold=last['block_threshold'],
+        scan_time_ms=last["scan_time_ms"],
+        block_threshold=last["block_threshold"],
         explanation=f"{last['violations_count']} violation(s) found",
     )
 
     try:
         from xhtml2pdf import pisa
         import io
+
         buf = io.BytesIO()
         pisa_status = pisa.CreatePDF(html, dest=buf)
         if pisa_status.err:
@@ -219,7 +225,9 @@ async def get_report_pdf(
         return Response(
             content=buf.read(),
             media_type="application/pdf",
-            headers={"Content-Disposition": f"attachment; filename=security-report-{filename}.pdf"},
+            headers={
+                "Content-Disposition": f"attachment; filename=security-report-{filename}.pdf"
+            },
         )
     except ImportError:
         raise HTTPException(
@@ -227,8 +235,6 @@ async def get_report_pdf(
             detail="PDF export not available. Install: pip install xhtml2pdf",
         )
 
-
-# ── HISTORY & METRICS ─────────────────────────────────────────────────────────
 
 @router.get(
     "/history",
@@ -261,21 +267,24 @@ async def health():
     summary="View JSON metrics dashboard",
 )
 async def metrics(
-    _: dict = Depends(require_roles(
-        UserRole.DEVOPS_ENGINEER,
-        UserRole.SECURITY_OFFICER,
-        UserRole.SUPER_ADMIN,
-    )),
+    _: dict = Depends(
+        require_roles(
+            UserRole.DEVOPS_ENGINEER,
+            UserRole.SECURITY_OFFICER,
+            UserRole.SUPER_ADMIN,
+        )
+    ),
 ):
     """
     Returns JSON metrics summary.
     **DevOps Engineer**, **Security Officer**, and **Super Admin** only.
     """
     from api.metrics import get_metrics
+
     stats = get_stats()
     metrics_data = get_metrics()
-    stats['top_violations'] = metrics_data.get('top_violations', [])
-    stats['requests_by_type'] = metrics_data.get('requests_by_type', {})
+    stats["top_violations"] = metrics_data.get("top_violations", [])
+    stats["requests_by_type"] = metrics_data.get("requests_by_type", {})
     return stats
 
 
@@ -285,16 +294,19 @@ async def metrics(
     summary="Prometheus-format metrics for Grafana",
 )
 async def prometheus_metrics(
-    _: dict = Depends(require_roles(
-        UserRole.SECURITY_OFFICER,
-        UserRole.SUPER_ADMIN,
-    )),
+    _: dict = Depends(
+        require_roles(
+            UserRole.SECURITY_OFFICER,
+            UserRole.SUPER_ADMIN,
+        )
+    ),
 ):
     """
     Prometheus-compatible metrics endpoint.
     **Security Officer** and **Super Admin** only.
     """
     from api.prometheus import generate_prometheus_metrics
+
     return PlainTextResponse(
         content=generate_prometheus_metrics(),
         media_type="text/plain; version=0.0.4; charset=utf-8",

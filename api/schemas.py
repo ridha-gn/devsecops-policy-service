@@ -3,17 +3,16 @@ from pydantic import BaseModel, Field
 from enum import Enum
 
 
-# ── Code types ─────────────────────────────────────────────────────────────────
 class CodeType(str, Enum):
-    TERRAFORM  = "terraform"
+    TERRAFORM = "terraform"
     DOCKERFILE = "dockerfile"
-    YAML       = "yaml"
+    YAML = "yaml"
 
 
 class BlockThreshold(str, Enum):
-    LOW      = "LOW"
-    MEDIUM   = "MEDIUM"
-    HIGH     = "HIGH"
+    LOW = "LOW"
+    MEDIUM = "MEDIUM"
+    HIGH = "HIGH"
     CRITICAL = "CRITICAL"
 
 
@@ -23,20 +22,19 @@ class AnalyzeRequest(BaseModel):
     filename: Optional[str] = Field(None, description="Original filename for reporting")
     block_threshold: BlockThreshold = Field(
         BlockThreshold.LOW,
-        description="Minimum severity level to trigger a BLOCK decision"
+        description="Minimum severity level to trigger a BLOCK decision",
     )
     diff_only: Optional[str] = Field(
-        None,
-        description="If provided, only scan lines present in this unified diff"
+        None, description="If provided, only scan lines present in this unified diff"
     )
 
 
 class Severity(str, Enum):
     CRITICAL = "CRITICAL"
-    HIGH     = "HIGH"
-    MEDIUM   = "MEDIUM"
-    LOW      = "LOW"
-    INFO     = "INFO"
+    HIGH = "HIGH"
+    MEDIUM = "MEDIUM"
+    LOW = "LOW"
+    INFO = "INFO"
 
 
 class Violation(BaseModel):
@@ -73,7 +71,6 @@ class ScanHistoryItem(BaseModel):
     block_threshold: str
 
 
-# ── Auto-Fix Schemas ───────────────────────────────────────────────────────────
 class FixRequest(BaseModel):
     code_type: CodeType = Field(..., description="Type of infrastructure code")
     content: str = Field(..., description="The insecure code to fix")
@@ -95,12 +92,11 @@ class FixResponse(BaseModel):
     diff: Optional[str] = None
 
 
-# ── RBAC / Auth Schemas ────────────────────────────────────────────────────────
 class UserRole(str, Enum):
-    DEVELOPER        = "DEVELOPER"
-    DEVOPS_ENGINEER  = "DEVOPS_ENGINEER"
+    DEVELOPER = "DEVELOPER"
+    DEVOPS_ENGINEER = "DEVOPS_ENGINEER"
     SECURITY_OFFICER = "SECURITY_OFFICER"
-    SUPER_ADMIN      = "SUPER_ADMIN"
+    SUPER_ADMIN = "SUPER_ADMIN"
 
 
 class LoginRequest(BaseModel):

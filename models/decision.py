@@ -28,15 +28,15 @@ class PolicyDecision:
     violations: List[PolicyViolation]
     summary: str
     scan_duration_ms: int = 0
-    
+
     @property
     def is_blocked(self) -> bool:
         return not self.allow
-    
+
     @property
     def critical_count(self) -> int:
         return sum(1 for v in self.violations if v.severity == PolicySeverity.CRITICAL)
-    
+
     @property
     def high_count(self) -> int:
         return sum(1 for v in self.violations if v.severity == PolicySeverity.HIGH)

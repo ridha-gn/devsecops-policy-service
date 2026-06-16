@@ -25,10 +25,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Policy engine routes (all protected by RBAC)
+
 app.include_router(router)
 
-# Auth + user management routes
+
 app.include_router(users_router)
 
 
